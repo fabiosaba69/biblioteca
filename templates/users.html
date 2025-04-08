@@ -142,6 +142,70 @@
             </div>
         </div>
         
+        <!-- Tessera utente -->
+        <div class="card mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0"><i class="fas fa-id-card me-2"></i> Tessera utente</h5>
+                <button id="print-user-card" class="btn btn-sm btn-primary">
+                    <i class="fas fa-print me-1"></i> Stampa Tessera
+                </button>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-lg-7">
+                        <!-- Anteprima tessera -->
+                        <div id="card-container" class="mb-3">
+                            <!-- Nome e Cognome -->
+                            <div class="card-element" style="top: 10px; left: 10px; width: 80%;">
+                                <div class="card-text" style="font-size: 18px; font-weight: bold; color: #000;">
+                                    {{ user.nome }} {{ user.cognome }}
+                                </div>
+                            </div>
+                            
+                            <!-- Classe -->
+                            <div class="card-element" style="top: 40px; left: 10px;">
+                                <div class="card-text" style="font-size: 14px; color: #444;">
+                                    <strong>Classe:</strong> {{ user.classe }}
+                                </div>
+                            </div>
+                            
+                            <!-- Barcode -->
+                            <div class="card-element" style="bottom: 10px; left: 10px; width: 95%; text-align: center;">
+                                <svg id="user-card-barcode"></svg>
+                            </div>
+                            
+                            <!-- Logo biblioteca -->
+                            <div class="card-element" style="top: 10px; right: 10px; width: 50px; height: 50px; text-align: right;">
+                                <img src="{{ url_for('static', filename='img/default_logo.svg') }}" style="max-width: 100%; max-height: 100%;">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-5">
+                        <div class="card">
+                            <div class="card-body">
+                                <h6 class="mb-3">Informazioni Tessera</h6>
+                                <ul class="list-group list-group-flush">
+                                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                                        <span>Codice:</span>
+                                        <span>{{ user.barcode }}</span>
+                                    </li>
+                                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                                        <span>Data registrazione:</span>
+                                        <span>{{ user.data_registrazione.strftime('%d/%m/%Y') }}</span>
+                                    </li>
+                                </ul>
+                                <div class="mt-3">
+                                    <a href="{{ url_for('user_card', id=user.id) }}" class="btn btn-outline-primary btn-sm w-100">
+                                        <i class="fas fa-edit me-1"></i> Personalizza Tessera
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
         <!-- Prestiti dell'utente -->
         <div class="card mb-4">
             <div class="card-header">
@@ -358,6 +422,78 @@
             height: 60,
             displayValue: true,
             fontSize: 12
+        });
+        
+        // Genera codice a barre per la tessera utente
+        JsBarcode("#user-card-barcode", "{{ user.barcode }}", {
+            format: "EAN13",
+            lineColor: "#000",
+            width: 1.5,
+            height: 40,
+            displayValue: true,
+            fontSize: 12,
+            margin: 0
+        });
+        
+        // Funzione di stampa della tessera
+        document.getElementById('print-user-card').addEventListener('click', function() {
+            // Crea un nuovo elemento div per la stampa
+            var printContent = document.createElement('div');
+            printContent.style.width = '85.60mm';
+            printContent.style.height = '53.98mm';
+            printContent.style.position = 'relative';
+            printContent.style.margin = '0 auto';
+            printContent.style.backgroundColor = '#fff';
+            printContent.style.border = '2px solid #000';
+            printContent.style.borderRadius = '3.18mm';
+            printContent.style.overflow = 'hidden';
+            printContent.style.color = '#000';
+            
+            // Copia il contenuto della tessera
+            var cardContainer = document.getElementById('card-container');
+            printContent.innerHTML = cardContainer.innerHTML;
+            
+            // Crea uno stile per la stampa
+            var style = document.createElement('style');
+            style.textContent = `
+                @media print {
+                    body * {
+                        visibility: hidden;
+                    }
+                    #print-container, #print-container * {
+                        visibility: visible;
+                    }
+                    #print-container {
+                        position: absolute;
+                        left: 0;
+                        top: 0;
+                        width: 85.60mm;
+                        height: 53.98mm;
+                    }
+                    /* Nasconde elementi interni non necessari per la stampa */
+                    .card-rotate-handle, .card-element-tooltip {
+                        display: none !important;
+                    }
+                }
+            `;
+            
+            // Crea un container per la stampa
+            var printContainer = document.createElement('div');
+            printContainer.id = 'print-container';
+            printContainer.appendChild(printContent);
+            
+            // Aggiunge gli elementi al body temporaneamente
+            document.body.appendChild(style);
+            document.body.appendChild(printContainer);
+            
+            // Stampa e poi rimuove gli elementi
+            window.print();
+            
+            // Timeout necessario per completare la stampa prima di ripulire
+            setTimeout(function() {
+                document.body.removeChild(style);
+                document.body.removeChild(printContainer);
+            }, 1000);
         });
         {% endif %}
     });
