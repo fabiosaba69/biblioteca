@@ -821,12 +821,62 @@ def search_user_by_barcode_api():
     }
     print(f"DEBUG: Utente trovato: {result}")
     return jsonify(result)
+    
+@app.route('/api/search/libro-barcode')
+@login_required
+def search_book_by_barcode_api():
+    """API per la ricerca di un libro tramite barcode (ISBN)"""
+    barcode = request.args.get('barcode', '')
+    print(f"DEBUG: Ricerca libro con barcode: {barcode}")
+    
+    if not barcode:
+        print("DEBUG: Barcode non fornito")
+        return jsonify({'error': 'Barcode non fornito'}), 400
+    
+    # Cerca il libro con l'ISBN esatto
+    book = Book.query.filter_by(isbn=barcode, disponibile=True).first()
+    
+    if not book:
+        print(f"DEBUG: Nessun libro trovato con barcode (ISBN): {barcode}")
+        return jsonify({'error': 'Libro non trovato'}), 404
+    
+    result = {
+        'id': book.id,
+        'isbn': book.isbn,
+        'titolo': book.titolo,
+        'autore': book.autore,
+        'editore': book.editore,
+        'immagine_url': book.immagine_url,
+        'anno_pubblicazione': book.anno_pubblicazione,
+        'disponibile': book.disponibile
+    }
+    
+    print(f"DEBUG: Libro trovato: {result}")
+    return jsonify(result)
 
 @app.route('/api/search/libri')
 @login_required
 def search_books_api():
     """API per la ricerca di libri"""
     query = request.args.get('q', '')
+    barcode = request.args.get('barcode', '')
+    
+    # Se è fornito un barcode/ISBN, cerca per quello in via prioritaria
+    if barcode:
+        # Cerca il libro per ISBN esatto
+        book = Book.query.filter_by(isbn=barcode, disponibile=True).first()
+        if book:
+            # Return a list with a single book if we find a match
+            return jsonify([{
+                'id': book.id,
+                'titolo': book.titolo,
+                'autore': book.autore,
+                'isbn': book.isbn,
+                'editore': book.editore,
+                'immagine_url': book.immagine_url
+            }])
+    
+    # Altrimenti, cerca per titolo/autore/ISBN
     if len(query) < 3:
         return jsonify([])
     

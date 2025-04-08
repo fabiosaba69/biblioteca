@@ -261,25 +261,65 @@ document.addEventListener('DOMContentLoaded', function() {
         // Mostra un messaggio di caricamento
         showMessage('Ricerca libro con barcode in corso...', 'info');
         
-        fetch(`/api/libro/${barcode}`)
-            .then(response => response.json())
+        // Prima prova la ricerca con l'API dedicata per barcode
+        fetch(`/api/search/libro-barcode?barcode=${encodeURIComponent(barcode)}`)
+            .then(response => {
+                if (!response.ok && response.status !== 404) {
+                    throw new Error(`Errore HTTP: ${response.status}`);
+                }
+                return response.json();
+            })
             .then(data => {
-                if (data.error) {
-                    showMessage(`Libro non trovato con codice ${barcode}. Verifica il codice.`, 'warning');
+                if (data && !data.error && data.id) {
+                    // Verifica se il libro è disponibile
+                    if (!data.disponibile) {
+                        showMessage(`Libro "${data.titolo}" trovato ma non disponibile per il prestito.`, 'warning');
+                        return;
+                    }
+                    
+                    // Mostra un messaggio di successo
+                    showMessage(`Barcode riconosciuto come libro: ${data.titolo}`, 'success');
+                    
+                    // Seleziona il libro
+                    selectBook(data.id, data.titolo, data.autore || '');
                     return;
                 }
                 
-                // Verifica se il libro è disponibile
-                if (!data.disponibile) {
-                    showMessage(`Libro "${data.titolo}" trovato ma non disponibile per il prestito.`, 'warning');
-                    return;
-                }
-                
-                // Mostra un messaggio di successo
-                showMessage(`Barcode riconosciuto come libro: ${data.titolo}`, 'success');
-                
-                // Seleziona il libro
-                selectBook(data.id, data.titolo, data.autore || '');
+                // Fallback all'API di ricerca libri generale
+                return fetch(`/api/search/libri?barcode=${encodeURIComponent(barcode)}`)
+                    .then(response => response.json())
+                    .then(books => {
+                        if (books && books.length > 0) {
+                            const book = books[0]; // Prendi il primo libro trovato
+                            showMessage(`Barcode riconosciuto come libro: ${book.titolo}`, 'success');
+                            
+                            // Seleziona il libro
+                            selectBook(book.id, book.titolo, book.autore || '');
+                            return;
+                        }
+                        
+                        // Fallback all'API originale se le altre non hanno trovato risultati
+                        return fetch(`/api/libro/${barcode}`)
+                            .then(response => response.json())
+                            .then(oldData => {
+                                if (oldData.error) {
+                                    showMessage(`Libro non trovato con codice ${barcode}. Verifica il codice.`, 'warning');
+                                    return;
+                                }
+                                
+                                // Verifica se il libro è disponibile
+                                if (!oldData.disponibile) {
+                                    showMessage(`Libro "${oldData.titolo}" trovato ma non disponibile per il prestito.`, 'warning');
+                                    return;
+                                }
+                                
+                                // Mostra un messaggio di successo
+                                showMessage(`Barcode riconosciuto come libro: ${oldData.titolo}`, 'success');
+                                
+                                // Seleziona il libro
+                                selectBook(oldData.id, oldData.titolo, oldData.autore || '');
+                            });
+                    });
             })
             .catch(error => {
                 console.error('Errore nella ricerca libro:', error);
@@ -333,24 +373,61 @@ document.addEventListener('DOMContentLoaded', function() {
                             return;
                         }
                         
-                        // Non è un utente, prova come libro
-                        return fetch(`/api/libro/${barcode}`)
-                            .then(response => response.json())
+                        // Non è un utente, prova come libro con la nuova API di ricerca per barcode
+                        return fetch(`/api/search/libro-barcode?barcode=${encodeURIComponent(barcode)}`)
+                            .then(response => {
+                                if (!response.ok && response.status !== 404) {
+                                    throw new Error(`Errore HTTP: ${response.status}`);
+                                }
+                                return response.json();
+                            })
                             .then(bookData => {
-                                if (bookData.error) {
-                                    showMessage(`Codice ${barcode} non riconosciuto come utente né come libro.`, 'warning');
+                                if (bookData && !bookData.error && bookData.id) {
+                                    // Verifica se il libro è disponibile
+                                    if (!bookData.disponibile) {
+                                        showMessage(`Libro trovato ma non disponibile: ${bookData.titolo}`, 'warning');
+                                        return;
+                                    }
+                                    
+                                    // Seleziona il libro
+                                    showMessage(`Barcode riconosciuto come libro: ${bookData.titolo}`, 'success');
+                                    selectBook(bookData.id, bookData.titolo, bookData.autore || '');
                                     return;
                                 }
                                 
-                                // Verifica se il libro è disponibile
-                                if (!bookData.disponibile) {
-                                    showMessage(`Libro trovato ma non disponibile: ${bookData.titolo}`, 'warning');
-                                    return;
-                                }
-                                
-                                // Seleziona il libro
-                                showMessage(`Barcode riconosciuto come libro: ${bookData.titolo}`, 'success');
-                                selectBook(bookData.id, bookData.titolo, bookData.autore || '');
+                                // Prova con l'API di ricerca libri generale
+                                return fetch(`/api/search/libri?barcode=${encodeURIComponent(barcode)}`)
+                                    .then(response => response.json())
+                                    .then(books => {
+                                        if (books && books.length > 0) {
+                                            const book = books[0]; // Prendi il primo libro trovato
+                                            showMessage(`Barcode riconosciuto come libro: ${book.titolo}`, 'success');
+                                            
+                                            // Seleziona il libro
+                                            selectBook(book.id, book.titolo, book.autore || '');
+                                            return;
+                                        }
+                                        
+                                        // Fallback all'API originale se le altre non hanno trovato risultati
+                                        return fetch(`/api/libro/${barcode}`)
+                                            .then(response => response.json())
+                                            .then(oldData => {
+                                                if (oldData.error) {
+                                                    showMessage(`Codice ${barcode} non riconosciuto come utente né come libro.`, 'warning');
+                                                    return;
+                                                }
+                                                
+                                                // Verifica se il libro è disponibile
+                                                if (!oldData.disponibile) {
+                                                    showMessage(`Libro trovato ma non disponibile: ${oldData.titolo}`, 'warning');
+                                                    return;
+                                                }
+                                                
+                                                // Seleziona il libro
+                                                showMessage(`Barcode riconosciuto come libro: ${oldData.titolo}`, 'success');
+                                                selectBook(oldData.id, oldData.titolo, oldData.autore || '');
+                                            });
+                                    });
                             });
                     });
             })
