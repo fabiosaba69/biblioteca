@@ -281,13 +281,9 @@
                                                 <span class="ms-2 badge bg-secondary">{{ data.utente.classe }}</span>
                                                 {% endif %}
                                             </div>
-                                            <div class="d-flex align-items-center">
+                                            <div>
                                                 <span class="badge bg-success me-1">Attivi: {{ data.totale_attivi }}</span>
-                                                <span class="badge bg-info me-2">Restituiti: {{ data.totale_restituiti }}</span>
-                                                <button type="button" class="btn btn-sm btn-outline-secondary ms-2" 
-                                                        onclick="printUserLoans({{ data.utente.id }}, '{{ data.utente.cognome }} {{ data.utente.nome }}')">
-                                                    <i class="fas fa-print"></i>
-                                                </button>
+                                                <span class="badge bg-info">Restituiti: {{ data.totale_restituiti }}</span>
                                             </div>
                                         </div>
                                     </button>
@@ -295,6 +291,12 @@
                                 <div id="collapse{{ data.utente.id }}" class="accordion-collapse collapse" 
                                      aria-labelledby="heading{{ data.utente.id }}" data-bs-parent="#userLoansAccordion">
                                     <div class="accordion-body p-0">
+                                        <div class="d-flex justify-content-end mb-3 mt-2 me-3">
+                                            <button type="button" class="btn btn-primary" 
+                                                    onclick="printUserLoans({{ data.utente.id }}, '{{ data.utente.cognome }} {{ data.utente.nome }}')">
+                                                <i class="fas fa-print me-1"></i> Stampa Prestiti
+                                            </button>
+                                        </div>
                                         {% if data.prestiti_attivi %}
                                         <div class="card mb-3">
                                             <div class="card-header bg-success text-white">

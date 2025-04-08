@@ -260,8 +260,11 @@ function filterUserLoans() {
  * @param {string} userName - Nome dell'utente
  */
 function printUserLoans(userId, userName) {
-    // Evita che l'evento si propaghi all'accordion-button
-    event.stopPropagation();
+    // Ferma la propagazione dell'evento e previene il comportamento di default
+    if (event) {
+        event.stopPropagation();
+        event.preventDefault();
+    }
     
     // Mostra un messaggio di caricamento
     showMessage('Generazione del PDF in corso...', 'info');
