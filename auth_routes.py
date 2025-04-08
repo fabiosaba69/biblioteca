@@ -56,49 +56,82 @@ def logout():
 @app.route('/register', methods=['GET', 'POST'])
 def register():
     """Registrazione nuovo utente"""
-    # Solo gli admin possono registrare nuovi utenti con ruoli specifici
-    # Gli altri possono solo registrarsi come studenti
-    if current_user.is_authenticated and not current_user.is_admin():
-        flash('Non hai i permessi per accedere a questa pagina', 'danger')
-        return redirect(url_for('index'))
-    
-    form = RegistrationForm()
-    
-    # Se l'utente non è admin, nascondi il campo ruolo
-    if not current_user.is_authenticated or not current_user.is_admin():
-        form.ruolo.data = ROLE_STUDENT
-    
-    if form.validate_on_submit():
-        # Genera un codice a barre EAN-13 univoco
-        while True:
-            barcode = generate_barcode()
-            if not User.query.filter_by(barcode=barcode).first():
-                break
-        
-        # Crea il nuovo utente
-        user = User(
-            nome=form.nome.data,
-            cognome=form.cognome.data,
-            classe=form.classe.data,
-            email=form.email.data,
-            username=form.username.data,
-            ruolo=form.ruolo.data,
-            barcode=barcode,
-            attivo=True
-        )
-        user.set_password(form.password.data)
-        
-        db.session.add(user)
-        db.session.commit()
-        
-        flash('Registrazione completata con successo!', 'success')
-        
-        # Se non è autenticato, fa il login diretto
-        if not current_user.is_authenticated:
-            login_user(user)
+    try:
+        # Solo gli admin possono registrare nuovi utenti con ruoli specifici
+        # Gli altri possono solo registrarsi come studenti
+        if current_user.is_authenticated and not current_user.is_admin():
+            flash('Non hai i permessi per accedere a questa pagina', 'danger')
             return redirect(url_for('index'))
         
-        return redirect(url_for('users_list'))
+        form = RegistrationForm()
+        
+        # Se l'utente non è admin, imposta il ruolo studente
+        if not current_user.is_authenticated or not current_user.is_admin():
+            form.ruolo.data = ROLE_STUDENT
+        
+        if form.validate_on_submit():
+            # Verifica se username o email esistono già
+            if User.query.filter_by(username=form.username.data).first():
+                flash('Username già in uso', 'danger')
+                return render_template('auth/register.html', form=form)
+                
+            if User.query.filter_by(email=form.email.data).first():
+                flash('Email già registrata', 'danger')
+                return render_template('auth/register.html', form=form)
+            
+            # Genera un codice a barre EAN-13 univoco con max 3 tentativi
+            barcode = None
+            for _ in range(3):
+                try:
+                    temp_barcode = generate_barcode()
+                    if not User.query.filter_by(barcode=temp_barcode).first():
+                        barcode = temp_barcode
+                        break
+                except Exception as e:
+                    app.logger.error(f"Errore generazione barcode: {str(e)}")
+                    
+            if not barcode:
+                flash('Errore nella generazione del codice utente. Riprova.', 'danger')
+                return render_template('auth/register.html', form=form)
+            
+            try:
+                # Crea il nuovo utente
+                user = User(
+                    nome=form.nome.data,
+                    cognome=form.cognome.data,
+                    classe=form.classe.data,
+                    email=form.email.data,
+                    username=form.username.data,
+                    ruolo=form.ruolo.data,
+                    barcode=barcode,
+                    attivo=True
+                )
+                user.set_password(form.password.data)
+                
+                db.session.add(user)
+                db.session.commit()
+                
+                flash('Registrazione completata con successo!', 'success')
+                
+                # Se non è autenticato, fa il login diretto
+                if not current_user.is_authenticated:
+                    login_user(user)
+                    return redirect(url_for('index'))
+                
+                return redirect(url_for('users_list'))
+                
+            except Exception as e:
+                db.session.rollback()
+                app.logger.error(f"Errore registrazione utente: {str(e)}")
+                flash('Errore durante la registrazione. Riprova.', 'danger')
+                return render_template('auth/register.html', form=form)
+                
+        return render_template('auth/register.html', form=form)
+        
+    except Exception as e:
+        app.logger.error(f"Errore generico registrazione: {str(e)}")
+        flash('Si è verificato un errore. Riprova più tardi.', 'danger')
+        return redirect(url_for('index'))
     
     return render_template('auth/register.html', form=form)
 
