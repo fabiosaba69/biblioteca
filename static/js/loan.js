@@ -181,11 +181,12 @@ document.addEventListener('DOMContentLoaded', function() {
      * @param {string} barcode - Codice a barre
      */
     function processBarcodeUser(barcode) {
-        fetch(`/api/utente/${barcode}`)
+        // Cerca tra tutti gli utenti per barcode tramite l'API di ricerca
+        fetch(`/api/search/utente-barcode?barcode=${encodeURIComponent(barcode)}`)
             .then(response => response.json())
             .then(data => {
-                if (data.error) {
-                    showMessage('Utente non trovato. Verifica il codice.', 'warning');
+                if (!data || !data.id) {
+                    showMessage('Utente non trovato. Verifica il codice della tessera.', 'warning');
                     return;
                 }
                 
@@ -237,10 +238,10 @@ document.addEventListener('DOMContentLoaded', function() {
      */
     function processBarcodeAuto(barcode) {
         // Prova prima come utente
-        fetch(`/api/utente/${barcode}`)
+        fetch(`/api/search/utente-barcode?barcode=${encodeURIComponent(barcode)}`)
             .then(response => response.json())
             .then(data => {
-                if (!data.error) {
+                if (data && data.id) {
                     // È un utente
                     selectUser(data.id, `${data.nome} ${data.cognome}`, data.classe);
                     
