@@ -629,6 +629,25 @@ def get_book_by_isbn(isbn):
         })
     return jsonify({'error': 'Libro non trovato'}), 404
 
+@app.route('/api/libro/dettaglio/<int:book_id>')
+@login_required
+def get_book_details(book_id):
+    """API per ottenere dettagli completi di un libro tramite ID"""
+    book = Book.query.get_or_404(book_id)
+    return jsonify({
+        'id': book.id,
+        'isbn': book.isbn,
+        'titolo': book.titolo,
+        'autore': book.autore,
+        'editore': book.editore,
+        'anno_pubblicazione': book.anno_pubblicazione,
+        'genere': book.genere,
+        'descrizione': book.descrizione,
+        'immagine_url': book.immagine_url,
+        'disponibile': book.disponibile,
+        'data_registrazione': book.data_registrazione.strftime('%d/%m/%Y')
+    })
+
 @app.route('/api/utente/<barcode>')
 @login_required
 def get_user_by_barcode(barcode):
@@ -643,6 +662,23 @@ def get_user_by_barcode(barcode):
             'barcode': user.barcode
         })
     return jsonify({'error': 'Utente non trovato'}), 404
+
+@app.route('/api/utente/dettaglio/<int:user_id>')
+@login_required
+def get_user_details(user_id):
+    """API per ottenere dettagli completi di un utente tramite ID"""
+    user = User.query.get_or_404(user_id)
+    return jsonify({
+        'id': user.id,
+        'nome': user.nome,
+        'cognome': user.cognome,
+        'classe': user.classe,
+        'email': user.email,
+        'barcode': user.barcode,
+        'ruolo': user.ruolo,
+        'attivo': user.attivo,
+        'data_registrazione': user.data_registrazione.strftime('%d/%m/%Y')
+    })
 
 @app.route('/api/prestiti/utente/<int:user_id>')
 @login_required

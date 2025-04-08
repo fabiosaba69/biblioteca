@@ -219,6 +219,38 @@ body {
     border-radius: 6px;
 }
 
+/* Anteprima prestito */
+#loan-preview-container {
+    margin-top: 25px;
+    margin-bottom: 15px;
+    animation: fadeIn 0.5s ease;
+}
+
+#loan-preview-container .card-header {
+    font-weight: bold;
+}
+
+#loan-preview-container .card {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+#selected-user-info .card,
+#selected-book-info .card {
+    background-color: rgba(13, 110, 253, 0.05);
+    border-left: 4px solid var(--bs-primary);
+    transition: all 0.3s ease;
+}
+
+#selected-user-info .card:hover,
+#selected-book-info .card:hover {
+    background-color: rgba(13, 110, 253, 0.1);
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
 /* Barcodes */
 .barcode-container {
     margin: 15px 0;

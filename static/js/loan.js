@@ -18,6 +18,20 @@ document.addEventListener('DOMContentLoaded', function() {
     const scanUserBtn = document.getElementById('scan-user');
     const scanBookBtn = document.getElementById('scan-book');
     
+    // Elementi per anteprima prestito
+    const previewLoanBtn = document.getElementById('preview-loan-btn');
+    const loanPreviewContainer = document.getElementById('loan-preview-container');
+    const previewUserDetails = document.getElementById('preview-user-details');
+    const previewBookDetails = document.getElementById('preview-book-details');
+    const previewLoanDuration = document.getElementById('preview-loan-duration');
+    const previewReturnDate = document.getElementById('preview-return-date');
+    const previewLoanNotes = document.getElementById('preview-loan-notes');
+    const saveLoanBtn = document.getElementById('save-loan-btn');
+    
+    // Dati utente e libro selezionati
+    let selectedUserData = null;
+    let selectedBookData = null;
+    
     // Supporto per la lettura tramite scanner di codici a barre
     let barcodeBuffer = '';
     let barcodeTimeout;
@@ -102,6 +116,35 @@ document.addEventListener('DOMContentLoaded', function() {
     if (scanBookBtn) {
         scanBookBtn.addEventListener('click', function() {
             toggleScanMode('book');
+        });
+    }
+    
+    // Event listener per il pulsante di anteprima
+    if (previewLoanBtn) {
+        previewLoanBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            showLoanPreview();
+        });
+    }
+    
+    // Event listener per il pulsante di salvataggio
+    if (saveLoanBtn) {
+        saveLoanBtn.addEventListener('click', function(e) {
+            // Prima di inviare il form, verifica che tutti i dati necessari siano presenti
+            if (!selectedUserId.value || !selectedBookId.value) {
+                e.preventDefault();
+                showMessage('Seleziona sia un utente che un libro prima di salvare il prestito', 'warning');
+                return false;
+            }
+            
+            // Se l'anteprima non è visibile, mostrala prima di procedere
+            if (loanPreviewContainer && loanPreviewContainer.style.display === 'none') {
+                e.preventDefault();
+                if (showLoanPreview()) {
+                    showMessage('Verifica i dati nell\'anteprima e clicca nuovamente su "Registra Prestito"', 'info');
+                }
+                return false;
+            }
         });
     }
     
@@ -308,17 +351,40 @@ document.addEventListener('DOMContentLoaded', function() {
     function selectUser(id, name, classe) {
         if (selectedUserId) selectedUserId.value = id;
         
-        if (selectedUserInfo) {
-            selectedUserInfo.innerHTML = `
-                <div class="card mb-3">
-                    <div class="card-body">
-                        <h5 class="card-title">${name}</h5>
-                        <p class="card-text">${classe}</p>
-                    </div>
-                </div>
-            `;
-            selectedUserInfo.style.display = 'block';
-        }
+        // Ottieni dati completi dell'utente
+        fetch(`/api/utente/dettaglio/${id}`)
+            .then(response => response.json())
+            .then(data => {
+                // Salva i dati completi dell'utente
+                selectedUserData = data;
+                
+                if (selectedUserInfo) {
+                    selectedUserInfo.innerHTML = `
+                        <div class="card mb-3">
+                            <div class="card-body">
+                                <h5 class="card-title">${name}</h5>
+                                <p class="card-text">${classe || ''}</p>
+                            </div>
+                        </div>
+                    `;
+                    selectedUserInfo.style.display = 'block';
+                }
+            })
+            .catch(error => {
+                console.error('Errore nel recupero dettagli utente:', error);
+                // Usa comunque i dati di base se non è possibile recuperare i dettagli
+                if (selectedUserInfo) {
+                    selectedUserInfo.innerHTML = `
+                        <div class="card mb-3">
+                            <div class="card-body">
+                                <h5 class="card-title">${name}</h5>
+                                <p class="card-text">${classe || ''}</p>
+                            </div>
+                        </div>
+                    `;
+                    selectedUserInfo.style.display = 'block';
+                }
+            });
         
         // Pulisci il campo di ricerca e i risultati
         if (userSearchInput) userSearchInput.value = '';
@@ -334,21 +400,133 @@ document.addEventListener('DOMContentLoaded', function() {
     function selectBook(id, title, author) {
         if (selectedBookId) selectedBookId.value = id;
         
-        if (selectedBookInfo) {
-            selectedBookInfo.innerHTML = `
-                <div class="card mb-3">
-                    <div class="card-body">
-                        <h5 class="card-title">${title}</h5>
-                        <p class="card-text">${author}</p>
-                    </div>
-                </div>
-            `;
-            selectedBookInfo.style.display = 'block';
-        }
+        // Ottieni dati completi del libro
+        fetch(`/api/libro/dettaglio/${id}`)
+            .then(response => response.json())
+            .then(data => {
+                // Salva i dati completi del libro
+                selectedBookData = data;
+                
+                if (selectedBookInfo) {
+                    selectedBookInfo.innerHTML = `
+                        <div class="card mb-3">
+                            <div class="card-body">
+                                <h5 class="card-title">${title}</h5>
+                                <p class="card-text">${author || ''}</p>
+                            </div>
+                        </div>
+                    `;
+                    selectedBookInfo.style.display = 'block';
+                }
+            })
+            .catch(error => {
+                console.error('Errore nel recupero dettagli libro:', error);
+                // Usa comunque i dati di base se non è possibile recuperare i dettagli
+                if (selectedBookInfo) {
+                    selectedBookInfo.innerHTML = `
+                        <div class="card mb-3">
+                            <div class="card-body">
+                                <h5 class="card-title">${title}</h5>
+                                <p class="card-text">${author || ''}</p>
+                            </div>
+                        </div>
+                    `;
+                    selectedBookInfo.style.display = 'block';
+                }
+            });
         
         // Pulisci il campo di ricerca e i risultati
         if (bookSearchInput) bookSearchInput.value = '';
         if (bookResults) bookResults.innerHTML = '';
+    }
+    
+    /**
+     * Mostra l'anteprima del prestito
+     */
+    function showLoanPreview() {
+        // Verifica se utente e libro sono stati selezionati
+        if (!selectedUserId.value || !selectedBookId.value) {
+            showMessage('Seleziona sia un utente che un libro prima di procedere', 'warning');
+            return false;
+        }
+        
+        // Recupera durata prestito e note
+        const loanDuration = document.getElementById('giorni_prestito').value;
+        const loanNotes = document.getElementById('nota').value;
+        
+        // Calcola data restituzione prevista
+        const today = new Date();
+        const returnDate = new Date();
+        returnDate.setDate(today.getDate() + parseInt(loanDuration));
+        const formattedReturnDate = returnDate.toLocaleDateString('it-IT', {
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric'
+        });
+        
+        // Ottieni i nomi utente e libro dai dati salvati o dalle card
+        let userName = '';
+        let userClass = '';
+        let userInfo = '';
+        
+        if (selectedUserData) {
+            userName = `${selectedUserData.nome} ${selectedUserData.cognome}`;
+            userClass = selectedUserData.classe || '';
+            userInfo = `
+                <p><strong>Nome:</strong> ${userName}</p>
+                <p><strong>Classe:</strong> ${userClass}</p>
+                <p><strong>Email:</strong> ${selectedUserData.email || ''}</p>
+                <p><strong>Barcode:</strong> ${selectedUserData.barcode || ''}</p>
+            `;
+        } else {
+            const userCard = document.querySelector('#selected-user-info .card-title');
+            const userClassElem = document.querySelector('#selected-user-info .card-text');
+            if (userCard) userName = userCard.textContent;
+            if (userClassElem) userClass = userClassElem.textContent;
+            userInfo = `
+                <p><strong>Nome:</strong> ${userName}</p>
+                <p><strong>Classe:</strong> ${userClass}</p>
+            `;
+        }
+        
+        let bookTitle = '';
+        let bookAuthor = '';
+        let bookInfo = '';
+        
+        if (selectedBookData) {
+            bookTitle = selectedBookData.titolo;
+            bookAuthor = selectedBookData.autore || '';
+            bookInfo = `
+                <p><strong>Titolo:</strong> ${bookTitle}</p>
+                <p><strong>Autore:</strong> ${bookAuthor}</p>
+                <p><strong>Editore:</strong> ${selectedBookData.editore || ''}</p>
+                <p><strong>ISBN:</strong> ${selectedBookData.isbn || ''}</p>
+            `;
+        } else {
+            const bookCard = document.querySelector('#selected-book-info .card-title');
+            const bookAuthorElem = document.querySelector('#selected-book-info .card-text');
+            if (bookCard) bookTitle = bookCard.textContent;
+            if (bookAuthorElem) bookAuthor = bookAuthorElem.textContent;
+            bookInfo = `
+                <p><strong>Titolo:</strong> ${bookTitle}</p>
+                <p><strong>Autore:</strong> ${bookAuthor}</p>
+            `;
+        }
+        
+        // Aggiorna l'anteprima
+        previewUserDetails.innerHTML = userInfo;
+        previewBookDetails.innerHTML = bookInfo;
+        previewLoanDuration.textContent = loanDuration;
+        previewReturnDate.textContent = formattedReturnDate;
+        previewLoanNotes.textContent = loanNotes || '-';
+        
+        // Mostra il container dell'anteprima
+        loanPreviewContainer.style.display = 'block';
+        
+        // Scorri alla sezione di anteprima
+        loanPreviewContainer.scrollIntoView({ behavior: 'smooth' });
+        
+        return true;
     }
 });
 

@@ -87,13 +87,54 @@
                         </div>
                     </div>
                     
+                    <!-- Anteprima del prestito per conferma -->
+                    <div class="row mt-4 mb-3" id="loan-preview-container" style="display: none;">
+                        <div class="col-12">
+                            <div class="card border-primary">
+                                <div class="card-header bg-primary text-white">
+                                    <h5 class="mb-0"><i class="fas fa-check-circle me-2"></i> Anteprima Prestito</h5>
+                                </div>
+                                <div class="card-body">
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <h6 class="border-bottom pb-2 mb-3">Dati Utente</h6>
+                                            <div id="preview-user-details"></div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <h6 class="border-bottom pb-2 mb-3">Dati Libro</h6>
+                                            <div id="preview-book-details"></div>
+                                        </div>
+                                    </div>
+                                    <div class="row mt-3">
+                                        <div class="col-md-6">
+                                            <p><strong>Durata prestito:</strong> <span id="preview-loan-duration"></span> giorni</p>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <p><strong>Data restituzione prevista:</strong> <span id="preview-return-date"></span></p>
+                                        </div>
+                                    </div>
+                                    <div class="row mt-2">
+                                        <div class="col-12">
+                                            <p><strong>Note:</strong> <span id="preview-loan-notes">-</span></p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
                     <div class="d-flex justify-content-between mt-3">
                         <a href="{{ url_for('loans') }}" class="btn btn-secondary">
                             <i class="fas fa-arrow-left me-2"></i> Annulla
                         </a>
-                        <button type="submit" class="btn btn-primary">
-                            <i class="fas fa-save me-2"></i> Registra Prestito
-                        </button>
+                        <div>
+                            <button type="button" id="preview-loan-btn" class="btn btn-info me-2">
+                                <i class="fas fa-eye me-2"></i> Anteprima
+                            </button>
+                            <button type="submit" id="save-loan-btn" class="btn btn-primary">
+                                <i class="fas fa-save me-2"></i> Registra Prestito
+                            </button>
+                        </div>
                     </div>
                 </form>
             </div>
