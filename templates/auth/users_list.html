@@ -1,0 +1,165 @@
+{% extends 'layout.html' %}
+
+{% block title %}Gestione Utenti{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h1 class="page-title">
+            <i class="fas fa-users me-2"></i> Gestione Utenti
+        </h1>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-8">
+        <div class="search-box">
+            <form action="{{ url_for('users_list') }}" method="get">
+                <div class="input-group">
+                    <span class="input-group-text"><i class="fas fa-search"></i></span>
+                    <input type="text" class="form-control" placeholder="Cerca utente per nome, classe..." name="q" value="{{ search_term }}">
+                    <button class="btn btn-primary" type="submit">Cerca</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    <div class="col-md-4 text-md-end">
+        <a href="{{ url_for('register') }}" class="btn btn-success">
+            <i class="fas fa-plus-circle me-2"></i> Nuovo Utente
+        </a>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-users me-2"></i> Elenco Utenti</h5>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover table-striped mb-0">
+                        <thead>
+                            <tr>
+                                <th>Nome</th>
+                                <th>Cognome</th>
+                                <th>Classe</th>
+                                <th>Email</th>
+                                <th>Username</th>
+                                <th>Ruolo</th>
+                                <th>Stato</th>
+                                <th>Azioni</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for user in users.items %}
+                            <tr>
+                                <td>{{ user.nome }}</td>
+                                <td>{{ user.cognome }}</td>
+                                <td>{{ user.classe }}</td>
+                                <td>{{ user.email }}</td>
+                                <td>{{ user.username }}</td>
+                                <td>
+                                    {% if user.is_admin() %}
+                                    <span class="badge bg-danger">Amministratore</span>
+                                    {% elif user.is_teacher() %}
+                                    <span class="badge bg-warning">Insegnante</span>
+                                    {% else %}
+                                    <span class="badge bg-info">Studente</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if user.attivo %}
+                                    <span class="badge bg-success">Attivo</span>
+                                    {% else %}
+                                    <span class="badge bg-secondary">Disattivato</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <a href="{{ url_for('edit_user', id=user.id) }}" class="btn btn-sm btn-primary">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                    {% if current_user.id != user.id and current_user.is_admin() %}
+                                    <button type="button" class="btn btn-sm btn-danger" data-bs-toggle="modal" data-bs-target="#deleteUserModal{{ user.id }}">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                    
+                                    <!-- Modal Conferma Eliminazione -->
+                                    <div class="modal fade" id="deleteUserModal{{ user.id }}" tabindex="-1" aria-hidden="true">
+                                        <div class="modal-dialog">
+                                            <div class="modal-content">
+                                                <div class="modal-header">
+                                                    <h5 class="modal-title">Conferma Eliminazione</h5>
+                                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                                </div>
+                                                <div class="modal-body">
+                                                    <p>Sei sicuro di voler eliminare questo utente?</p>
+                                                    <p><strong>Nome:</strong> {{ user.nome }} {{ user.cognome }}</p>
+                                                    <p><strong>Username:</strong> {{ user.username }}</p>
+                                                    <p class="text-danger">Questa azione non può essere annullata.</p>
+                                                </div>
+                                                <div class="modal-footer">
+                                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annulla</button>
+                                                    <form action="{{ url_for('delete_user', id=user.id) }}" method="post">
+                                                        <button type="submit" class="btn btn-danger">Elimina Utente</button>
+                                                    </form>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="8" class="text-center py-4">
+                                    {% if search_term %}
+                                    <p>Nessun utente trovato con "{{ search_term }}"</p>
+                                    {% else %}
+                                    <p>Nessun utente presente nel database</p>
+                                    {% endif %}
+                                    <a href="{{ url_for('register') }}" class="btn btn-sm btn-primary">
+                                        <i class="fas fa-plus-circle me-2"></i> Aggiungi Utente
+                                    </a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            {% if users.pages > 1 %}
+            <div class="card-footer">
+                <nav aria-label="Navigazione pagine">
+                    <ul class="pagination justify-content-center mb-0">
+                        <li class="page-item {% if users.page == 1 %}disabled{% endif %}">
+                            <a class="page-link" href="{{ url_for('users_list', page=users.prev_num, q=search_term) }}" aria-label="Precedente">
+                                <span aria-hidden="true">&laquo;</span>
+                            </a>
+                        </li>
+                        
+                        {% for page_num in users.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}
+                            {% if page_num %}
+                                <li class="page-item {% if page_num == users.page %}active{% endif %}">
+                                    <a class="page-link" href="{{ url_for('users_list', page=page_num, q=search_term) }}">{{ page_num }}</a>
+                                </li>
+                            {% else %}
+                                <li class="page-item disabled">
+                                    <span class="page-link">...</span>
+                                </li>
+                            {% endif %}
+                        {% endfor %}
+                        
+                        <li class="page-item {% if users.page == users.pages %}disabled{% endif %}">
+                            <a class="page-link" href="{{ url_for('users_list', page=users.next_num, q=search_term) }}" aria-label="Successivo">
+                                <span aria-hidden="true">&raquo;</span>
+                            </a>
+                        </li>
+                    </ul>
+                </nav>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

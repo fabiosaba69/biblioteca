@@ -1,6 +1,12 @@
 from datetime import datetime
 from app import db
 from flask_login import UserMixin
+from werkzeug.security import generate_password_hash, check_password_hash
+
+# Definizione dei ruoli utente
+ROLE_ADMIN = 'admin'        # Amministratore completo
+ROLE_TEACHER = 'teacher'    # Insegnante
+ROLE_STUDENT = 'student'    # Studente
 
 class User(UserMixin, db.Model):
     __tablename__ = 'utenti'
@@ -10,9 +16,28 @@ class User(UserMixin, db.Model):
     cognome = db.Column(db.String(100), nullable=False)
     classe = db.Column(db.String(10))
     email = db.Column(db.String(120), unique=True)
+    username = db.Column(db.String(64), unique=True, nullable=False)
+    password_hash = db.Column(db.String(256))
     barcode = db.Column(db.String(13), unique=True)
+    ruolo = db.Column(db.String(20), default=ROLE_STUDENT)  # admin, teacher, student
+    attivo = db.Column(db.Boolean, default=True)
     data_registrazione = db.Column(db.DateTime, default=datetime.utcnow)
     prestiti = db.relationship('Loan', backref='utente', lazy=True)
+    
+    def set_password(self, password):
+        self.password_hash = generate_password_hash(password)
+        
+    def check_password(self, password):
+        return check_password_hash(self.password_hash, password)
+    
+    def is_admin(self):
+        return self.ruolo == ROLE_ADMIN
+    
+    def is_teacher(self):
+        return self.ruolo == ROLE_TEACHER or self.ruolo == ROLE_ADMIN
+    
+    def is_student(self):
+        return self.ruolo == ROLE_STUDENT
     
     def __repr__(self):
         return f'<Utente {self.nome} {self.cognome}>'

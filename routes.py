@@ -5,10 +5,33 @@ import csv
 import io
 from datetime import datetime, timedelta
 import requests
-from flask import render_template, request, redirect, url_for, flash, jsonify, session, send_file
+from flask import render_template, request, redirect, url_for, flash, jsonify, session, send_file, abort
+from flask_login import login_required, current_user
 from app import app, db
-from models import User, Book, Loan, CardTemplate
+from models import User, Book, Loan, CardTemplate, ROLE_ADMIN, ROLE_TEACHER, ROLE_STUDENT
 from utils import generate_barcode, search_by_isbn, parse_import_file, save_base64_image
+
+# Decoratore per verificare se l'utente è un insegnante
+def teacher_required(f):
+    @login_required
+    def decorated_function(*args, **kwargs):
+        if not current_user.is_teacher():
+            flash('Accesso negato: richiesti privilegi di insegnante', 'danger')
+            return redirect(url_for('index'))
+        return f(*args, **kwargs)
+    decorated_function.__name__ = f.__name__
+    return decorated_function
+
+# Decoratore per verificare se l'utente è un amministratore
+def admin_required(f):
+    @login_required
+    def decorated_function(*args, **kwargs):
+        if not current_user.is_admin():
+            flash('Accesso negato: richiesti privilegi di amministratore', 'danger')
+            return redirect(url_for('index'))
+        return f(*args, **kwargs)
+    decorated_function.__name__ = f.__name__
+    return decorated_function
 
 # Context processor per variabili globali nei templates
 @app.context_processor
@@ -42,6 +65,7 @@ def index():
 # ---- GESTIONE LIBRI ----
 
 @app.route('/libri')
+@login_required
 def books():
     """Visualizza e gestisce l'elenco dei libri"""
     search_term = request.args.get('q', '')
@@ -60,6 +84,7 @@ def books():
     return render_template('books.html', books=books, search_term=search_term)
 
 @app.route('/libri/aggiungi', methods=['GET', 'POST'])
+@teacher_required
 def add_book():
     """Aggiunge un nuovo libro al database"""
     if request.method == 'POST':
@@ -106,6 +131,7 @@ def add_book():
     return render_template('books.html', form_mode="add")
 
 @app.route('/libri/<int:id>/modifica', methods=['GET', 'POST'])
+@teacher_required
 def edit_book(id):
     """Modifica un libro esistente"""
     book = Book.query.get_or_404(id)
@@ -135,6 +161,7 @@ def edit_book(id):
     return render_template('books.html', book=book, form_mode="edit")
 
 @app.route('/libri/<int:id>/elimina', methods=['POST'])
+@teacher_required
 def delete_book(id):
     """Elimina un libro dal database"""
     book = Book.query.get_or_404(id)
@@ -158,6 +185,7 @@ def get_isbn_info(isbn):
     return jsonify(book_info)
 
 @app.route('/importa', methods=['GET', 'POST'])
+@teacher_required
 def import_books():
     """Importazione di libri da file CSV o TXT"""
     if request.method == 'POST':
@@ -226,26 +254,30 @@ def import_books():
 
 # ---- GESTIONE UTENTI ----
 
-@app.route('/utenti')
-def users():
-    """Visualizza e gestisce l'elenco degli utenti"""
-    search_term = request.args.get('q', '')
-    page = request.args.get('page', 1, type=int)
-    per_page = 20
-    
-    if search_term:
-        users = User.query.filter(
-            (User.nome.ilike(f'%{search_term}%')) | 
-            (User.cognome.ilike(f'%{search_term}%')) |
-            (User.classe.ilike(f'%{search_term}%')) |
-            (User.barcode.ilike(f'%{search_term}%'))
-        ).order_by(User.cognome, User.nome).paginate(page=page, per_page=per_page, error_out=False)
-    else:
-        users = User.query.order_by(User.cognome, User.nome).paginate(page=page, per_page=per_page, error_out=False)
-    
-    return render_template('users.html', users=users, search_term=search_term)
+# Rimuoviamo questa funzione dato che già definita in auth_routes.py
+# Questa è duplicata della funzione users_list in auth_routes.py
+# @app.route('/utenti-lista')
+# @teacher_required
+# def users_list():
+#     """Visualizza e gestisce l'elenco degli utenti"""
+#     search_term = request.args.get('q', '')
+#     page = request.args.get('page', 1, type=int)
+#     per_page = 20
+#     
+#     if search_term:
+#         users = User.query.filter(
+#             (User.nome.ilike(f'%{search_term}%')) | 
+#             (User.cognome.ilike(f'%{search_term}%')) |
+#             (User.classe.ilike(f'%{search_term}%')) |
+#             (User.barcode.ilike(f'%{search_term}%'))
+#         ).order_by(User.cognome, User.nome).paginate(page=page, per_page=per_page, error_out=False)
+#     else:
+#         users = User.query.order_by(User.cognome, User.nome).paginate(page=page, per_page=per_page, error_out=False)
+#     
+#     return render_template('users.html', users=users, search_term=search_term)
 
 @app.route('/utenti/aggiungi', methods=['GET', 'POST'])
+@teacher_required
 def add_user():
     """Aggiunge un nuovo utente al database"""
     if request.method == 'POST':
@@ -272,53 +304,58 @@ def add_user():
         db.session.commit()
         
         flash('Utente aggiunto con successo!', 'success')
-        return redirect(url_for('users'))
+        return redirect(url_for('users_list'))
         
     return render_template('users.html', form_mode="add")
 
-@app.route('/utenti/<int:id>/modifica', methods=['GET', 'POST'])
-def edit_user(id):
-    """Modifica un utente esistente"""
-    user = User.query.get_or_404(id)
-    
-    if request.method == 'POST':
-        user.nome = request.form.get('nome')
-        user.cognome = request.form.get('cognome')
-        user.classe = request.form.get('classe')
-        user.email = request.form.get('email')
-        
-        # Se è stato richiesto un nuovo barcode
-        if 'generate_new_barcode' in request.form:
-            while True:
-                barcode = generate_barcode()
-                if not User.query.filter_by(barcode=barcode).first():
-                    break
-            user.barcode = barcode
-        
-        db.session.commit()
-        flash('Utente aggiornato con successo!', 'success')
-        return redirect(url_for('users'))
-        
-    return render_template('users.html', user=user, form_mode="edit")
+# Commentata per evitare duplicazione con la funzione in auth_routes.py
+# @app.route('/utenti/<int:id>/modifica', methods=['GET', 'POST'])
+# @teacher_required
+# def edit_user_route(id):
+#     """Modifica un utente esistente"""
+#     user = User.query.get_or_404(id)
+#     
+#     if request.method == 'POST':
+#         user.nome = request.form.get('nome')
+#         user.cognome = request.form.get('cognome')
+#         user.classe = request.form.get('classe')
+#         user.email = request.form.get('email')
+#         
+#         # Se è stato richiesto un nuovo barcode
+#         if 'generate_new_barcode' in request.form:
+#             while True:
+#                 barcode = generate_barcode()
+#                 if not User.query.filter_by(barcode=barcode).first():
+#                     break
+#             user.barcode = barcode
+#         
+#         db.session.commit()
+#         flash('Utente aggiornato con successo!', 'success')
+#         return redirect(url_for('users_list'))
+#         
+#     return render_template('users.html', user=user, form_mode="edit")
 
-@app.route('/utenti/<int:id>/elimina', methods=['POST'])
-def delete_user(id):
-    """Elimina un utente dal database"""
-    user = User.query.get_or_404(id)
-    
-    # Verifica se l'utente ha prestiti attivi
-    active_loans = Loan.query.filter_by(utente_id=id, data_restituzione_effettiva=None).first()
-    if active_loans:
-        flash('Impossibile eliminare l\'utente: ci sono prestiti attivi', 'danger')
-        return redirect(url_for('users'))
-    
-    db.session.delete(user)
-    db.session.commit()
-    
-    flash('Utente eliminato con successo', 'success')
-    return redirect(url_for('users'))
+# Commentata per evitare duplicazione con auth_routes.py
+# @app.route('/utenti/<int:id>/elimina', methods=['POST'])
+# @teacher_required
+# def delete_user_route(id):
+#     """Elimina un utente dal database"""
+#     user = User.query.get_or_404(id)
+#     
+#     # Verifica se l'utente ha prestiti attivi
+#     active_loans = Loan.query.filter_by(utente_id=id, data_restituzione_effettiva=None).first()
+#     if active_loans:
+#         flash('Impossibile eliminare l\'utente: ci sono prestiti attivi', 'danger')
+#         return redirect(url_for('users_list'))
+#     
+#     db.session.delete(user)
+#     db.session.commit()
+#     
+#     flash('Utente eliminato con successo', 'success')
+#     return redirect(url_for('users_list'))
 
 @app.route('/utenti/<int:id>/tessera')
+@login_required
 def user_card(id):
     """Visualizza la tessera di un utente"""
     user = User.query.get_or_404(id)
@@ -333,6 +370,7 @@ def user_card(id):
 # ---- GESTIONE PRESTITI ----
 
 @app.route('/prestiti')
+@login_required
 def loans():
     """Visualizza e gestisce l'elenco dei prestiti"""
     status = request.args.get('status', 'all')
@@ -368,6 +406,7 @@ def loans():
     return render_template('loans.html', loans=loans, status=status, search_term=search_term, current_time=current_time)
 
 @app.route('/prestiti/aggiungi', methods=['GET', 'POST'])
+@teacher_required
 def add_loan():
     """Aggiunge un nuovo prestito"""
     if request.method == 'POST':
@@ -416,6 +455,7 @@ def add_loan():
     return render_template('loans.html', users=users, available_books=available_books, form_mode="add", current_time=current_time)
 
 @app.route('/prestiti/<int:id>/restituisci', methods=['POST'])
+@teacher_required
 def return_loan(id):
     """Registra la restituzione di un prestito"""
     loan = Loan.query.get_or_404(id)
@@ -433,6 +473,7 @@ def return_loan(id):
     return redirect(url_for('loans'))
 
 @app.route('/prestiti/<int:id>/elimina', methods=['POST'])
+@teacher_required
 def delete_loan(id):
     """Elimina un prestito dal database"""
     loan = Loan.query.get_or_404(id)
@@ -450,12 +491,14 @@ def delete_loan(id):
 # ---- GESTIONE TESSERE ----
 
 @app.route('/modelli-tessera')
+@teacher_required
 def card_templates():
     """Visualizza e gestisce i modelli di tessera"""
     templates = CardTemplate.query.all()
     return render_template('card_editor.html', templates=templates, mode="templates")
 
 @app.route('/modelli-tessera/aggiungi', methods=['POST'])
+@teacher_required
 def add_template():
     """Aggiunge un nuovo modello di tessera"""
     nome = request.form.get('nome')
@@ -479,6 +522,7 @@ def add_template():
     return redirect(url_for('card_templates'))
 
 @app.route('/modelli-tessera/<int:id>/modifica', methods=['POST'])
+@teacher_required
 def edit_template(id):
     """Modifica un modello di tessera esistente"""
     template = CardTemplate.query.get_or_404(id)
@@ -499,6 +543,7 @@ def edit_template(id):
     return redirect(url_for('card_templates'))
 
 @app.route('/modelli-tessera/<int:id>/elimina', methods=['POST'])
+@teacher_required
 def delete_template(id):
     """Elimina un modello di tessera"""
     template = CardTemplate.query.get_or_404(id)
@@ -512,6 +557,7 @@ def delete_template(id):
 # ---- STATISTICHE ----
 
 @app.route('/statistiche')
+@login_required
 def statistics():
     """Visualizza le statistiche della biblioteca"""
     # Statistiche generali
@@ -552,6 +598,7 @@ def statistics():
 # ---- API ----
 
 @app.route('/api/libro/<isbn>')
+@login_required
 def get_book_by_isbn(isbn):
     """API per ottenere un libro dal database tramite ISBN"""
     book = Book.query.filter_by(isbn=isbn).first()
@@ -568,6 +615,7 @@ def get_book_by_isbn(isbn):
     return jsonify({'error': 'Libro non trovato'}), 404
 
 @app.route('/api/utente/<barcode>')
+@login_required
 def get_user_by_barcode(barcode):
     """API per ottenere un utente dal database tramite barcode"""
     user = User.query.filter_by(barcode=barcode).first()
@@ -582,6 +630,7 @@ def get_user_by_barcode(barcode):
     return jsonify({'error': 'Utente non trovato'}), 404
 
 @app.route('/api/prestiti/utente/<int:user_id>')
+@login_required
 def get_loans_by_user(user_id):
     """API per ottenere i prestiti di un utente"""
     user = User.query.get_or_404(user_id)
@@ -613,6 +662,7 @@ def get_loans_by_user(user_id):
     })
 
 @app.route('/api/modello-tessera/<int:id>')
+@login_required
 def get_card_template(id):
     """API per ottenere un modello di tessera"""
     template = CardTemplate.query.get_or_404(id)

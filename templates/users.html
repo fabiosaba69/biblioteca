@@ -57,7 +57,7 @@
                     </div>
                     
                     <div class="d-flex justify-content-between mt-3">
-                        <a href="{{ url_for('users') }}" class="btn btn-secondary">
+                        <a href="{{ url_for('users_list') }}" class="btn btn-secondary">
                             <i class="fas fa-arrow-left me-2"></i> Annulla
                         </a>
                         <button type="submit" class="btn btn-primary">
@@ -127,7 +127,7 @@
                     
                     <div class="d-flex justify-content-between mt-3">
                         <div>
-                            <a href="{{ url_for('users') }}" class="btn btn-secondary me-2">
+                            <a href="{{ url_for('users_list') }}" class="btn btn-secondary me-2">
                                 <i class="fas fa-arrow-left me-2"></i> Annulla
                             </a>
                             <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#deleteUserModal">
@@ -224,7 +224,7 @@
 <div class="row mb-4">
     <div class="col-md-8">
         <div class="search-box">
-            <form action="{{ url_for('users') }}" method="get">
+            <form action="{{ url_for('users_list') }}" method="get">
                 <div class="input-group">
                     <span class="input-group-text"><i class="fas fa-search"></i></span>
                     <input type="text" class="form-control" placeholder="Cerca per nome, cognome o classe..." name="q" value="{{ search_term }}">
@@ -308,7 +308,7 @@
                 <nav aria-label="Navigazione pagine">
                     <ul class="pagination justify-content-center mb-0">
                         <li class="page-item {% if users.page == 1 %}disabled{% endif %}">
-                            <a class="page-link" href="{{ url_for('users', page=users.prev_num, q=search_term) }}" aria-label="Precedente">
+                            <a class="page-link" href="{{ url_for('users_list', page=users.prev_num, q=search_term) }}" aria-label="Precedente">
                                 <span aria-hidden="true">&laquo;</span>
                             </a>
                         </li>
@@ -316,7 +316,7 @@
                         {% for page_num in users.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}
                             {% if page_num %}
                                 <li class="page-item {% if page_num == users.page %}active{% endif %}">
-                                    <a class="page-link" href="{{ url_for('users', page=page_num, q=search_term) }}">{{ page_num }}</a>
+                                    <a class="page-link" href="{{ url_for('users_list', page=page_num, q=search_term) }}">{{ page_num }}</a>
                                 </li>
                             {% else %}
                                 <li class="page-item disabled">
@@ -326,7 +326,7 @@
                         {% endfor %}
                         
                         <li class="page-item {% if users.page == users.pages %}disabled{% endif %}">
-                            <a class="page-link" href="{{ url_for('users', page=users.next_num, q=search_term) }}" aria-label="Successivo">
+                            <a class="page-link" href="{{ url_for('users_list', page=users.next_num, q=search_term) }}" aria-label="Successivo">
                                 <span aria-hidden="true">&raquo;</span>
                             </a>
                         </li>
