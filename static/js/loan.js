@@ -36,6 +36,21 @@ document.addEventListener('DOMContentLoaded', function() {
     let barcodeBuffer = '';
     let barcodeTimeout;
     
+    // Aggiunge un alert con tutte le informazioni di debug relative al barcode
+    function debugBarcode(barcode) {
+        console.log('DEBUG: Codice barcode rilevato:', barcode);
+        
+        // Aggiungi un campo di input nascosto per mantenere il barcode per debug
+        let debugInput = document.getElementById('debug-barcode');
+        if (!debugInput) {
+            debugInput = document.createElement('input');
+            debugInput.type = 'hidden';
+            debugInput.id = 'debug-barcode';
+            document.body.appendChild(debugInput);
+        }
+        debugInput.value = barcode;
+    }
+    
     // Gestione dell'input rapido da scanner di codici a barre
     document.addEventListener('keypress', function(e) {
         // Verifica se siamo nella pagina dei prestiti
@@ -61,6 +76,9 @@ document.addEventListener('DOMContentLoaded', function() {
         barcodeTimeout = setTimeout(function() {
             // Verifica se il buffer ha una lunghezza ragionevole per un codice
             if (barcodeBuffer.length >= 10) {
+                // Debug barcode
+                debugBarcode(barcodeBuffer);
+                
                 // Inserisci il valore nel campo barcode
                 barcodeInput.value = barcodeBuffer;
                 

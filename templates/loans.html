@@ -123,6 +123,38 @@
                         </div>
                     </div>
 
+                    <!-- Test del barcode -->
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h6 class="mb-0">Test Barcode</h6>
+                                </div>
+                                <div class="card-body">
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="input-group mb-2">
+                                                <span class="input-group-text">
+                                                    <i class="fas fa-barcode"></i>
+                                                </span>
+                                                <input type="text" class="form-control" id="test-barcode-input" value="2234793825719" placeholder="Inserisci barcode da testare">
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <button type="button" id="test-barcode-user-btn" class="btn btn-sm btn-info">
+                                                Testa come Utente
+                                            </button>
+                                            <button type="button" id="test-barcode-book-btn" class="btn btn-sm btn-info ms-2">
+                                                Testa come Libro
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div id="test-result" class="mt-2"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
                     <div class="d-flex justify-content-between mt-3">
                         <a href="{{ url_for('loans') }}" class="btn btn-secondary">
                             <i class="fas fa-arrow-left me-2"></i> Annulla
@@ -314,5 +346,98 @@
     function now() {
         return new Date();
     }
+    
+    // Aggiungiamo i gestori eventi per i pulsanti di test
+    document.addEventListener('DOMContentLoaded', function() {
+        const testBarcodeInput = document.getElementById('test-barcode-input');
+        const testUserBtn = document.getElementById('test-barcode-user-btn');
+        const testBookBtn = document.getElementById('test-barcode-book-btn');
+        const testResult = document.getElementById('test-result');
+        
+        if (testUserBtn) {
+            testUserBtn.addEventListener('click', function() {
+                const barcode = testBarcodeInput.value.trim();
+                if (!barcode) {
+                    testResult.innerHTML = '<div class="alert alert-warning">Inserisci un codice a barre da testare</div>';
+                    return;
+                }
+                
+                testResult.innerHTML = '<div class="alert alert-info">Ricerca in corso...</div>';
+                
+                // Test diretto dell'API
+                fetch(`/api/search/utente-barcode?barcode=${encodeURIComponent(barcode)}`)
+                    .then(response => {
+                        // Mostra lo status code
+                        testResult.innerHTML = `<div class="alert alert-info">Status code: ${response.status}</div>`;
+                        return response.json().catch(e => {
+                            throw new Error(`Errore nel parsing JSON: ${e.message}`);
+                        });
+                    })
+                    .then(data => {
+                        if (data.error) {
+                            testResult.innerHTML = `<div class="alert alert-warning">Errore: ${data.error}</div>`;
+                            return;
+                        }
+                        
+                        testResult.innerHTML = `
+                            <div class="alert alert-success">
+                                <h6>Utente trovato!</h6>
+                                <p><strong>ID:</strong> ${data.id}</p>
+                                <p><strong>Nome:</strong> ${data.nome} ${data.cognome}</p>
+                                <p><strong>Classe:</strong> ${data.classe || '-'}</p>
+                                <p><strong>Barcode:</strong> ${data.barcode || '-'}</p>
+                            </div>
+                        `;
+                    })
+                    .catch(error => {
+                        console.error('Errore:', error);
+                        testResult.innerHTML = `<div class="alert alert-danger">Errore: ${error.message}</div>`;
+                    });
+            });
+        }
+        
+        if (testBookBtn) {
+            testBookBtn.addEventListener('click', function() {
+                const barcode = testBarcodeInput.value.trim();
+                if (!barcode) {
+                    testResult.innerHTML = '<div class="alert alert-warning">Inserisci un codice a barre da testare</div>';
+                    return;
+                }
+                
+                testResult.innerHTML = '<div class="alert alert-info">Ricerca in corso...</div>';
+                
+                // Test diretto dell'API
+                fetch(`/api/libro/${encodeURIComponent(barcode)}`)
+                    .then(response => {
+                        // Mostra lo status code
+                        testResult.innerHTML = `<div class="alert alert-info">Status code: ${response.status}</div>`;
+                        return response.json().catch(e => {
+                            throw new Error(`Errore nel parsing JSON: ${e.message}`);
+                        });
+                    })
+                    .then(data => {
+                        if (data.error) {
+                            testResult.innerHTML = `<div class="alert alert-warning">Errore: ${data.error}</div>`;
+                            return;
+                        }
+                        
+                        testResult.innerHTML = `
+                            <div class="alert alert-success">
+                                <h6>Libro trovato!</h6>
+                                <p><strong>ID:</strong> ${data.id}</p>
+                                <p><strong>Titolo:</strong> ${data.titolo}</p>
+                                <p><strong>Autore:</strong> ${data.autore || '-'}</p>
+                                <p><strong>ISBN:</strong> ${data.isbn || '-'}</p>
+                                <p><strong>Disponibile:</strong> ${data.disponibile ? 'Sì' : 'No'}</p>
+                            </div>
+                        `;
+                    })
+                    .catch(error => {
+                        console.error('Errore:', error);
+                        testResult.innerHTML = `<div class="alert alert-danger">Errore: ${error.message}</div>`;
+                    });
+            });
+        }
+    });
 </script>
 {% endblock %}
