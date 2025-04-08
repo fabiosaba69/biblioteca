@@ -107,6 +107,18 @@ body {
     padding-bottom: 0.625rem;
 }
 
+/* Input con valore selezionato */
+.has-selected-value {
+    border-color: #28a745;
+    background-color: rgba(40, 167, 69, 0.1);
+    font-weight: 500;
+}
+
+.has-selected-value:focus {
+    border-color: #28a745;
+    box-shadow: 0 0 0 0.2rem rgba(40, 167, 69, 0.25);
+}
+
 /* Search Results */
 .search-results {
     position: absolute;

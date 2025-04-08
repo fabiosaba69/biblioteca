@@ -199,14 +199,20 @@ document.addEventListener('DOMContentLoaded', function() {
      * @param {string} barcode - Codice a barre
      */
     function processBarcodeUser(barcode) {
+        // Mostra un messaggio di caricamento
+        showMessage('Ricerca utente con barcode in corso...', 'info');
+        
         // Cerca tra tutti gli utenti per barcode tramite l'API di ricerca
         fetch(`/api/search/utente-barcode?barcode=${encodeURIComponent(barcode)}`)
             .then(response => response.json())
             .then(data => {
                 if (!data || !data.id) {
-                    showMessage('Utente non trovato. Verifica il codice della tessera.', 'warning');
+                    showMessage(`Utente non trovato con barcode ${barcode}. Verifica il codice della tessera.`, 'warning');
                     return;
                 }
+                
+                // Mostra un messaggio di successo
+                showMessage(`Barcode riconosciuto come utente: ${data.nome} ${data.cognome}`, 'success');
                 
                 // Seleziona l'utente
                 selectUser(data.id, `${data.nome} ${data.cognome}`, data.classe);
@@ -218,7 +224,7 @@ document.addEventListener('DOMContentLoaded', function() {
             })
             .catch(error => {
                 console.error('Errore nella ricerca utente:', error);
-                showMessage('Errore durante la ricerca. Riprova più tardi.', 'danger');
+                showMessage(`Errore durante la ricerca con barcode ${barcode}. Riprova più tardi.`, 'danger');
             });
     }
     
@@ -227,26 +233,32 @@ document.addEventListener('DOMContentLoaded', function() {
      * @param {string} barcode - Codice a barre o ISBN
      */
     function processBarcodeBook(barcode) {
+        // Mostra un messaggio di caricamento
+        showMessage('Ricerca libro con barcode in corso...', 'info');
+        
         fetch(`/api/libro/${barcode}`)
             .then(response => response.json())
             .then(data => {
                 if (data.error) {
-                    showMessage('Libro non trovato. Verifica il codice.', 'warning');
+                    showMessage(`Libro non trovato con codice ${barcode}. Verifica il codice.`, 'warning');
                     return;
                 }
                 
                 // Verifica se il libro è disponibile
                 if (!data.disponibile) {
-                    showMessage('Questo libro non è disponibile per il prestito.', 'warning');
+                    showMessage(`Libro "${data.titolo}" trovato ma non disponibile per il prestito.`, 'warning');
                     return;
                 }
+                
+                // Mostra un messaggio di successo
+                showMessage(`Barcode riconosciuto come libro: ${data.titolo}`, 'success');
                 
                 // Seleziona il libro
                 selectBook(data.id, data.titolo, data.autore || '');
             })
             .catch(error => {
                 console.error('Errore nella ricerca libro:', error);
-                showMessage('Errore durante la ricerca. Riprova più tardi.', 'danger');
+                showMessage(`Errore durante la ricerca con barcode ${barcode}. Riprova più tardi.`, 'danger');
             });
     }
     
@@ -255,12 +267,16 @@ document.addEventListener('DOMContentLoaded', function() {
      * @param {string} barcode - Codice a barre
      */
     function processBarcodeAuto(barcode) {
+        // Mostra un messaggio di caricamento
+        showMessage('Scansione codice a barre in corso...', 'info');
+        
         // Prova prima come utente
         fetch(`/api/search/utente-barcode?barcode=${encodeURIComponent(barcode)}`)
             .then(response => response.json())
             .then(data => {
                 if (data && data.id) {
                     // È un utente
+                    showMessage(`Barcode riconosciuto come utente: ${data.nome} ${data.cognome}`, 'success');
                     selectUser(data.id, `${data.nome} ${data.cognome}`, data.classe);
                     
                     // Focus sul campo del libro
@@ -275,23 +291,24 @@ document.addEventListener('DOMContentLoaded', function() {
                     .then(response => response.json())
                     .then(bookData => {
                         if (bookData.error) {
-                            showMessage('Codice non riconosciuto.', 'warning');
+                            showMessage(`Codice ${barcode} non riconosciuto come utente né come libro.`, 'warning');
                             return;
                         }
                         
                         // Verifica se il libro è disponibile
                         if (!bookData.disponibile) {
-                            showMessage('Questo libro non è disponibile per il prestito.', 'warning');
+                            showMessage(`Libro trovato ma non disponibile: ${bookData.titolo}`, 'warning');
                             return;
                         }
                         
                         // Seleziona il libro
+                        showMessage(`Barcode riconosciuto come libro: ${bookData.titolo}`, 'success');
                         selectBook(bookData.id, bookData.titolo, bookData.autore || '');
                     });
             })
             .catch(error => {
                 console.error('Errore nella scansione:', error);
-                showMessage('Errore durante la ricerca. Riprova più tardi.', 'danger');
+                showMessage(`Errore durante la scansione del codice ${barcode}. Riprova più tardi.`, 'danger');
             });
     }
     
@@ -424,36 +441,68 @@ document.addEventListener('DOMContentLoaded', function() {
                 // Salva i dati completi dell'utente
                 selectedUserData = data;
                 
+                // Aggiorna il campo di ricerca con il nome dell'utente selezionato
+                if (userSearchInput) {
+                    userSearchInput.value = name;
+                    userSearchInput.setAttribute('data-selected-id', id);
+                    userSearchInput.setAttribute('data-selected-name', name);
+                    // Aggiungi una classe che indica che il campo contiene un valore selezionato
+                    userSearchInput.classList.add('has-selected-value');
+                }
+                
                 if (selectedUserInfo) {
                     selectedUserInfo.innerHTML = `
                         <div class="card mb-3">
                             <div class="card-body">
-                                <h5 class="card-title">${name}</h5>
-                                <p class="card-text">${classe || ''}</p>
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <div>
+                                        <h5 class="card-title">${name}</h5>
+                                        <p class="card-text mb-0">${classe || ''}</p>
+                                        ${data.barcode ? `<small class="text-muted">Barcode: ${data.barcode}</small>` : ''}
+                                    </div>
+                                    <span class="badge bg-success">Utente Selezionato</span>
+                                </div>
                             </div>
                         </div>
                     `;
                     selectedUserInfo.style.display = 'block';
                 }
+                
+                // Mostra un messaggio di conferma
+                showMessage(`Utente "${name}" selezionato con successo!`, 'success');
             })
             .catch(error => {
                 console.error('Errore nel recupero dettagli utente:', error);
                 // Usa comunque i dati di base se non è possibile recuperare i dettagli
+                if (userSearchInput) {
+                    userSearchInput.value = name;
+                    userSearchInput.setAttribute('data-selected-id', id);
+                    userSearchInput.setAttribute('data-selected-name', name);
+                    userSearchInput.classList.add('has-selected-value');
+                }
+                
                 if (selectedUserInfo) {
                     selectedUserInfo.innerHTML = `
                         <div class="card mb-3">
                             <div class="card-body">
-                                <h5 class="card-title">${name}</h5>
-                                <p class="card-text">${classe || ''}</p>
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <div>
+                                        <h5 class="card-title">${name}</h5>
+                                        <p class="card-text">${classe || ''}</p>
+                                    </div>
+                                    <span class="badge bg-success">Utente Selezionato</span>
+                                </div>
                             </div>
                         </div>
                     `;
                     selectedUserInfo.style.display = 'block';
                 }
+                
+                // Mostra un messaggio di conferma
+                showMessage(`Utente "${name}" selezionato con successo!`, 'success');
             });
         
-        // Pulisci il campo di ricerca e i risultati
-        if (userSearchInput) userSearchInput.value = '';
+        // Pulisci i risultati
         if (userResults) userResults.innerHTML = '';
     }
     
@@ -473,36 +522,68 @@ document.addEventListener('DOMContentLoaded', function() {
                 // Salva i dati completi del libro
                 selectedBookData = data;
                 
+                // Aggiorna il campo di ricerca con il titolo del libro selezionato
+                if (bookSearchInput) {
+                    bookSearchInput.value = title;
+                    bookSearchInput.setAttribute('data-selected-id', id);
+                    bookSearchInput.setAttribute('data-selected-title', title);
+                    // Aggiungi una classe che indica che il campo contiene un valore selezionato
+                    bookSearchInput.classList.add('has-selected-value');
+                }
+                
                 if (selectedBookInfo) {
                     selectedBookInfo.innerHTML = `
                         <div class="card mb-3">
                             <div class="card-body">
-                                <h5 class="card-title">${title}</h5>
-                                <p class="card-text">${author || ''}</p>
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <div>
+                                        <h5 class="card-title">${title}</h5>
+                                        <p class="card-text mb-0">${author || ''}</p>
+                                        ${data.isbn ? `<small class="text-muted">ISBN: ${data.isbn}</small>` : ''}
+                                    </div>
+                                    <span class="badge bg-success">Libro Selezionato</span>
+                                </div>
                             </div>
                         </div>
                     `;
                     selectedBookInfo.style.display = 'block';
                 }
+                
+                // Mostra un messaggio di conferma
+                showMessage(`Libro "${title}" selezionato con successo!`, 'success');
             })
             .catch(error => {
                 console.error('Errore nel recupero dettagli libro:', error);
                 // Usa comunque i dati di base se non è possibile recuperare i dettagli
+                if (bookSearchInput) {
+                    bookSearchInput.value = title;
+                    bookSearchInput.setAttribute('data-selected-id', id);
+                    bookSearchInput.setAttribute('data-selected-title', title);
+                    bookSearchInput.classList.add('has-selected-value');
+                }
+                
                 if (selectedBookInfo) {
                     selectedBookInfo.innerHTML = `
                         <div class="card mb-3">
                             <div class="card-body">
-                                <h5 class="card-title">${title}</h5>
-                                <p class="card-text">${author || ''}</p>
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <div>
+                                        <h5 class="card-title">${title}</h5>
+                                        <p class="card-text">${author || ''}</p>
+                                    </div>
+                                    <span class="badge bg-success">Libro Selezionato</span>
+                                </div>
                             </div>
                         </div>
                     `;
                     selectedBookInfo.style.display = 'block';
                 }
+                
+                // Mostra un messaggio di conferma
+                showMessage(`Libro "${title}" selezionato con successo!`, 'success');
             });
         
-        // Pulisci il campo di ricerca e i risultati
-        if (bookSearchInput) bookSearchInput.value = '';
+        // Pulisci i risultati
         if (bookResults) bookResults.innerHTML = '';
     }
     

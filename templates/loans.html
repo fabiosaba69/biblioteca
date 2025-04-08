@@ -386,8 +386,17 @@
                                 <p><strong>Nome:</strong> ${data.nome} ${data.cognome}</p>
                                 <p><strong>Classe:</strong> ${data.classe || '-'}</p>
                                 <p><strong>Barcode:</strong> ${data.barcode || '-'}</p>
+                                <button id="apply-user-test" class="btn btn-sm btn-primary mt-2">
+                                    <i class="fas fa-check me-1"></i> Usa questo utente
+                                </button>
                             </div>
                         `;
+                        
+                        // Aggiungi event listener per applicare il risultato del test
+                        document.getElementById('apply-user-test').addEventListener('click', function() {
+                            // Utilizzo della funzione principale di selezione utente
+                            processBarcodeUser(barcode);
+                        });
                     })
                     .catch(error => {
                         console.error('Errore:', error);
@@ -429,8 +438,19 @@
                                 <p><strong>Autore:</strong> ${data.autore || '-'}</p>
                                 <p><strong>ISBN:</strong> ${data.isbn || '-'}</p>
                                 <p><strong>Disponibile:</strong> ${data.disponibile ? 'Sì' : 'No'}</p>
+                                <button id="apply-book-test" class="btn btn-sm btn-primary mt-2" ${!data.disponibile ? 'disabled' : ''}>
+                                    <i class="fas fa-check me-1"></i> Usa questo libro
+                                </button>
                             </div>
                         `;
+                        
+                        // Aggiungi event listener per applicare il risultato del test
+                        if (data.disponibile) {
+                            document.getElementById('apply-book-test').addEventListener('click', function() {
+                                // Utilizzo della funzione principale di selezione libro
+                                processBarcodeBook(barcode);
+                            });
+                        }
                     })
                     .catch(error => {
                         console.error('Errore:', error);
