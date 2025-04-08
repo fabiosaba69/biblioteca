@@ -1,0 +1,199 @@
+{% extends 'layout.html' %}
+
+{% block title %}Tessera Utente - {{ user.nome }} {{ user.cognome }}{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h1 class="page-title d-flex justify-content-between align-items-center">
+            <span><i class="fas fa-id-card me-2"></i> Tessera Utente</span>
+            <div>
+                <a href="{{ url_for('edit_user', id=user.id) }}" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left me-1"></i> Torna al Profilo
+                </a>
+                <button class="btn btn-primary ms-2" id="print-card">
+                    <i class="fas fa-print me-1"></i> Stampa Tessera
+                </button>
+            </div>
+        </h1>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Editor Tessera -->
+    <div class="col-lg-8 mb-4" id="card-editor">
+        <div class="card mb-3">
+            <div class="card-header">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Personalizza Tessera</h5>
+                    <div>
+                        {% if templates %}
+                        <div class="dropdown d-inline-block me-2">
+                            <button class="btn btn-sm btn-outline-primary dropdown-toggle" type="button" id="template-selector-button" data-bs-toggle="dropdown" aria-expanded="false">
+                                <i class="fas fa-file-alt me-1"></i> Modelli
+                            </button>
+                            <ul class="dropdown-menu" aria-labelledby="template-selector-button">
+                                {% for template in templates %}
+                                <li>
+                                    <a class="dropdown-item" href="#" onclick="loadTemplate('{{ template.id }}')">
+                                        {{ template.nome }}
+                                        {% if template.predefinito %}
+                                        <span class="badge bg-info ms-1">Predefinito</span>
+                                        {% endif %}
+                                    </a>
+                                </li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="element-toolbar mb-3">
+                    <button class="btn btn-sm btn-outline-primary me-1" onclick="addNewElement('text')">
+                        <i class="fas fa-font me-1"></i> Aggiungi Testo
+                    </button>
+                    <button class="btn btn-sm btn-outline-primary me-1" onclick="addNewElement('logo')">
+                        <i class="fas fa-image me-1"></i> Aggiungi Immagine
+                    </button>
+                    <button class="btn btn-sm btn-outline-primary me-1" onclick="addNewElement('barcode')">
+                        <i class="fas fa-barcode me-1"></i> Aggiungi Barcode
+                    </button>
+                    <button class="btn btn-sm btn-outline-primary" onclick="addNewElement('customImage')">
+                        <i class="fas fa-cloud-upload-alt me-1"></i> Carica Immagine
+                    </button>
+                </div>
+                
+                <!-- Modal per caricamento immagine custom -->
+                <div class="modal fade" id="customImageModal" tabindex="-1" aria-hidden="true">
+                    <div class="modal-dialog">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title">Carica Immagine Personalizzata</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                            </div>
+                            <div class="modal-body">
+                                <div class="image-dropzone" id="imageDropzone">
+                                    <div class="text-center">
+                                        <i class="fas fa-cloud-upload-alt fa-3x mb-3"></i>
+                                        <p>Trascina un'immagine qui o fai clic per selezionarla</p>
+                                        <p class="text-muted small">Formati supportati: JPG, PNG, SVG. Max 2MB.</p>
+                                    </div>
+                                    <input type="file" id="imageUpload" class="d-none" accept="image/*">
+                                </div>
+                                <div id="imagePreview" class="mt-3 text-center d-none">
+                                    <h6>Anteprima:</h6>
+                                    <img src="" id="previewImage" class="img-fluid border rounded" style="max-height: 200px;">
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annulla</button>
+                                <button type="button" class="btn btn-primary" id="addCustomImage" disabled>Aggiungi alla Tessera</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Container della tessera -->
+                <div id="card-container" class="bg-white rounded shadow position-relative" 
+                     style="width: 85.60mm; height: 53.98mm; margin: 0 auto; overflow: hidden;">
+                    <!-- Gli elementi verranno aggiunti dinamicamente -->
+                </div>
+                
+                <!-- Dati utente (per sostituzione dinamica) -->
+                {% if user %}
+                <div id="user-data" style="display: none;" 
+                     data-id="{{ user.id }}"
+                     data-name="{{ user.nome }}"
+                     data-surname="{{ user.cognome }}"
+                     data-class="{{ user.classe }}"
+                     data-barcode="{{ user.barcode }}">
+                </div>
+                {% endif %}
+
+                <div class="text-center mt-3">
+                    <p class="text-muted mb-0">Dimensioni standard: 85.60 x 53.98 mm (formato tessera)</p>
+                    <p class="text-muted small">Trascina gli elementi per posizionarli. Usa i bordi per ridimensionare.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-4 mb-4">
+        <!-- Proprietà e salvataggio -->
+        <div class="card mb-3">
+            <div class="card-header">
+                <h5 class="mb-0">Proprietà Elemento</h5>
+            </div>
+            <div class="card-body">
+                <div id="properties-panel">
+                    <p class="text-center text-muted my-5">
+                        Seleziona un elemento sulla tessera per modificarne le proprietà
+                    </p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Informazioni Utente</h5>
+            </div>
+            <div class="card-body">
+                <ul class="list-group list-group-flush">
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <span><strong>Nome:</strong></span>
+                        <span>{{ user.nome }}</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <span><strong>Cognome:</strong></span>
+                        <span>{{ user.cognome }}</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <span><strong>Classe:</strong></span>
+                        <span>{{ user.classe }}</span>
+                    </li>
+                    <li class="list-group-item">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <span><strong>Codice Barcode:</strong></span>
+                            <span>{{ user.barcode }}</span>
+                        </div>
+                        <div class="text-center">
+                            <svg id="user-barcode"></svg>
+                        </div>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<!-- Script per l'editor di tessere -->
+<script src="{{ url_for('static', filename='js/card_editor.js') }}"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Inizializza il barcode dell'utente
+        const userBarcode = document.getElementById('user-barcode');
+        if (userBarcode) {
+            JsBarcode(userBarcode, "{{ user.barcode }}", {
+                format: "EAN13",
+                lineColor: "#000",
+                width: 2,
+                height: 50,
+                displayValue: true,
+                fontSize: 12
+            });
+        }
+
+        // Stampa tessera quando si preme il pulsante
+        const printButton = document.getElementById('print-card');
+        if (printButton) {
+            printButton.addEventListener('click', function() {
+                printCard();
+            });
+        }
+    });
+</script>
+{% endblock %}

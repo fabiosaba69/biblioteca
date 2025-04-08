@@ -365,7 +365,7 @@ def user_card(id):
     if not default_template and templates:
         default_template = templates[0]
     
-    return render_template('card_editor.html', user=user, templates=templates, default_template=default_template)
+    return render_template('user_card.html', user=user, templates=templates, default_template=default_template)
 
 # ---- GESTIONE PRESTITI ----
 
@@ -497,10 +497,16 @@ def card_templates():
     templates = CardTemplate.query.all()
     return render_template('card_editor.html', templates=templates, mode="templates")
 
-@app.route('/modelli-tessera/aggiungi', methods=['POST'])
+@app.route('/modelli-tessera/aggiungi', methods=['GET', 'POST'])
 @teacher_required
 def add_template():
     """Aggiunge un nuovo modello di tessera"""
+    if request.method == 'GET':
+        # Mostra l'editor tessere senza un modello caricato
+        templates = CardTemplate.query.all()
+        return render_template('card_editor.html', templates=templates, mode="editor")
+    
+    # Gestione POST - salvataggio modello
     nome = request.form.get('nome')
     contenuto = request.form.get('contenuto')
     predefinito = 'predefinito' in request.form
@@ -521,12 +527,17 @@ def add_template():
     flash('Modello di tessera salvato con successo!', 'success')
     return redirect(url_for('card_templates'))
 
-@app.route('/modelli-tessera/<int:id>/modifica', methods=['POST'])
+@app.route('/modelli-tessera/<int:id>/modifica', methods=['GET', 'POST'])
 @teacher_required
 def edit_template(id):
     """Modifica un modello di tessera esistente"""
     template = CardTemplate.query.get_or_404(id)
     
+    if request.method == 'GET':
+        templates = CardTemplate.query.all()
+        return render_template('card_editor.html', template=template, templates=templates, mode="editor")
+    
+    # Gestione POST - aggiornamento modello
     template.nome = request.form.get('nome')
     template.contenuto = request.form.get('contenuto')
     predefinito = 'predefinito' in request.form
