@@ -1,10 +1,16 @@
 from flask import render_template, flash, redirect, url_for, request
 from flask_login import login_user, logout_user, current_user, login_required
 from werkzeug.urls import urlsplit
+from datetime import datetime
 from app import app, db
 from models import User, ROLE_ADMIN, ROLE_TEACHER, ROLE_STUDENT
 from forms import LoginForm, RegistrationForm, UserEditForm
 from utils import generate_barcode
+
+# Variabile globale per i template
+@app.context_processor
+def inject_now():
+    return {'now': datetime.utcnow}
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
