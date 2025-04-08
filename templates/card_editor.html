@@ -15,16 +15,95 @@
         border-radius: 3.18mm;
         overflow: hidden;
         color: #000;
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
     }
     
     .card-element {
         position: absolute;
         cursor: move;
         z-index: 10;
+        transition: box-shadow 0.2s ease;
     }
     
     .card-element.selected {
         border: 2px dashed #007bff;
+        box-shadow: 0 0 8px rgba(0, 123, 255, 0.5);
+    }
+    
+    .card-rotate-handle {
+        width: 18px;
+        height: 18px;
+        position: absolute;
+        top: -20px;
+        left: 50%;
+        margin-left: -9px;
+        background-color: #007bff;
+        border-radius: 50%;
+        cursor: pointer;
+        display: none;
+        z-index: 20;
+    }
+    
+    .card-element.selected .card-rotate-handle {
+        display: block;
+    }
+    
+    /* Controlli di redimensionamento personalizzati */
+    .card-resize-handle {
+        width: 10px;
+        height: 10px;
+        background-color: #007bff;
+        position: absolute;
+        border-radius: 50%;
+        z-index: 20;
+    }
+    
+    .card-element.card-barcode {
+        cursor: move;
+        overflow: visible;
+    }
+
+    /* Tooltip per gli elementi */
+    .card-element-tooltip {
+        position: absolute;
+        background-color: rgba(0,0,0,0.7);
+        color: white;
+        padding: 2px 6px;
+        font-size: 12px;
+        border-radius: 4px;
+        bottom: 100%;
+        left: 50%;
+        transform: translateX(-50%);
+        white-space: nowrap;
+        opacity: 0;
+        transition: opacity 0.2s;
+        pointer-events: none;
+        z-index: 30;
+    }
+    
+    .card-element:hover .card-element-tooltip {
+        opacity: 1;
+    }
+    
+    /* Per evidenziare meglio l'area di lavoro durante il trascinamento */
+    .dropzone-highlight {
+        background-color: rgba(0, 123, 255, 0.05);
+        border: 2px dashed rgba(0, 123, 255, 0.2);
+    }
+    
+    /* Stile per il caricamento di immagini */
+    .image-dropzone {
+        border: 2px dashed #ced4da;
+        padding: 20px;
+        text-align: center;
+        cursor: pointer;
+        background-color: rgba(0,0,0,0.02);
+        transition: all 0.3s;
+    }
+    
+    .image-dropzone:hover, .image-dropzone.dragover {
+        background-color: rgba(0,0,0,0.05);
+        border-color: #adb5bd;
     }
 </style>
 {% endblock %}
@@ -74,9 +153,42 @@
                     <button class="btn btn-sm btn-outline-primary me-1" onclick="addNewElement('logo')">
                         <i class="fas fa-image me-1"></i> Aggiungi Immagine
                     </button>
-                    <button class="btn btn-sm btn-outline-primary" onclick="addNewElement('barcode')">
+                    <button class="btn btn-sm btn-outline-primary me-1" onclick="addNewElement('barcode')">
                         <i class="fas fa-barcode me-1"></i> Aggiungi Barcode
                     </button>
+                    <button class="btn btn-sm btn-outline-primary" onclick="addNewElement('customImage')">
+                        <i class="fas fa-cloud-upload-alt me-1"></i> Carica Immagine
+                    </button>
+                </div>
+                
+                <!-- Modal per caricamento immagine custom -->
+                <div class="modal fade" id="customImageModal" tabindex="-1" aria-hidden="true">
+                    <div class="modal-dialog">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title">Carica Immagine Personalizzata</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                            </div>
+                            <div class="modal-body">
+                                <div class="image-dropzone" id="imageDropzone">
+                                    <div class="text-center">
+                                        <i class="fas fa-cloud-upload-alt fa-3x mb-3"></i>
+                                        <p>Trascina un'immagine qui o fai clic per selezionarla</p>
+                                        <p class="text-muted small">Formati supportati: JPG, PNG, SVG. Max 2MB.</p>
+                                    </div>
+                                    <input type="file" id="imageUpload" class="d-none" accept="image/*">
+                                </div>
+                                <div id="imagePreview" class="mt-3 text-center d-none">
+                                    <h6>Anteprima:</h6>
+                                    <img src="" id="previewImage" class="img-fluid border rounded" style="max-height: 200px;">
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annulla</button>
+                                <button type="button" class="btn btn-primary" id="addCustomImage" disabled>Aggiungi alla Tessera</button>
+                            </div>
+                        </div>
+                    </div>
                 </div>
                 
                 <!-- Container della tessera -->
