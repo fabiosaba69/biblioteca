@@ -599,6 +599,30 @@ def statistics():
     # Prepara la lista dei nomi completi per gli utenti più attivi
     most_active_users_names = [f"{user.nome} {user.cognome}" for user, _ in most_active_users]
     
+    # Prestiti dettagliati per utente (attivi e restituiti)
+    user_loans_details = []
+    for user in User.query.order_by(User.cognome, User.nome).all():
+        # Recupera prestiti attivi e storici dell'utente
+        active_user_loans = Loan.query.filter_by(
+            utente_id=user.id, 
+            data_restituzione_effettiva=None
+        ).all()
+        
+        returned_user_loans = Loan.query.filter(
+            Loan.utente_id==user.id, 
+            Loan.data_restituzione_effettiva!=None
+        ).all()
+        
+        # Aggiungi alla lista solo se l'utente ha prestiti (attivi o restituiti)
+        if active_user_loans or returned_user_loans:
+            user_loans_details.append({
+                'utente': user,
+                'prestiti_attivi': active_user_loans,
+                'prestiti_restituiti': returned_user_loans,
+                'totale_attivi': len(active_user_loans),
+                'totale_restituiti': len(returned_user_loans)
+            })
+    
     return render_template('stats.html', 
                           total_books=total_books,
                           total_users=total_users,
@@ -607,7 +631,8 @@ def statistics():
                           most_loaned_books=most_loaned_books,
                           most_active_users=most_active_users,
                           most_active_users_names=most_active_users_names,
-                          monthly_loans=monthly_loans)
+                          monthly_loans=monthly_loans,
+                          user_loans_details=user_loans_details)
 
 # ---- API ----
 

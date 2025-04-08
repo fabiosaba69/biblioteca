@@ -181,6 +181,11 @@
                             Utenti Più Attivi
                         </button>
                     </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="user-loans-tab" data-bs-toggle="tab" data-bs-target="#user-loans-content" type="button" role="tab" aria-controls="user-loans-content" aria-selected="false">
+                            Prestiti per Utente
+                        </button>
+                    </li>
                 </ul>
             </div>
             <div class="card-body">
@@ -248,6 +253,106 @@
                                     {% endfor %}
                                 </tbody>
                             </table>
+                        </div>
+                    </div>
+                    
+                    <!-- Prestiti per Utente Tab -->
+                    <div class="tab-pane fade" id="user-loans-content" role="tabpanel" aria-labelledby="user-loans-tab">
+                        <div class="input-group mb-3" style="max-width: 300px;">
+                            <input type="text" class="form-control" id="user-loans-search" placeholder="Filtra utenti..." onkeyup="filterUserLoans()">
+                        </div>
+                        
+                        <div class="accordion" id="userLoansAccordion">
+                            {% for data in user_loans_details %}
+                            <div class="accordion-item user-loan-item">
+                                <h2 class="accordion-header" id="heading{{ data.utente.id }}">
+                                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" 
+                                            data-bs-target="#collapse{{ data.utente.id }}" aria-expanded="false" 
+                                            aria-controls="collapse{{ data.utente.id }}">
+                                        <div class="d-flex w-100 justify-content-between align-items-center">
+                                            <div>
+                                                <strong>{{ data.utente.cognome }} {{ data.utente.nome }}</strong>
+                                                {% if data.utente.classe %}
+                                                <span class="ms-2 badge bg-secondary">{{ data.utente.classe }}</span>
+                                                {% endif %}
+                                            </div>
+                                            <div>
+                                                <span class="badge bg-success me-1">Attivi: {{ data.totale_attivi }}</span>
+                                                <span class="badge bg-info">Restituiti: {{ data.totale_restituiti }}</span>
+                                            </div>
+                                        </div>
+                                    </button>
+                                </h2>
+                                <div id="collapse{{ data.utente.id }}" class="accordion-collapse collapse" 
+                                     aria-labelledby="heading{{ data.utente.id }}" data-bs-parent="#userLoansAccordion">
+                                    <div class="accordion-body p-0">
+                                        {% if data.prestiti_attivi %}
+                                        <div class="card mb-3">
+                                            <div class="card-header bg-success text-white">
+                                                <h5 class="mb-0">Prestiti Attivi</h5>
+                                            </div>
+                                            <div class="table-responsive">
+                                                <table class="table table-hover mb-0">
+                                                    <thead>
+                                                        <tr>
+                                                            <th>Titolo</th>
+                                                            <th>Autore</th>
+                                                            <th>Data Prestito</th>
+                                                            <th>Restituzione Prevista</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        {% for prestito in data.prestiti_attivi %}
+                                                        <tr>
+                                                            <td>{{ prestito.libro.titolo }}</td>
+                                                            <td>{{ prestito.libro.autore }}</td>
+                                                            <td>{{ prestito.data_prestito.strftime('%d/%m/%Y') }}</td>
+                                                            <td>{{ prestito.data_restituzione_prevista.strftime('%d/%m/%Y') if prestito.data_restituzione_prevista else 'N/D' }}</td>
+                                                        </tr>
+                                                        {% endfor %}
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        </div>
+                                        {% endif %}
+                                        
+                                        {% if data.prestiti_restituiti %}
+                                        <div class="card">
+                                            <div class="card-header bg-info text-white">
+                                                <h5 class="mb-0">Prestiti Restituiti</h5>
+                                            </div>
+                                            <div class="table-responsive">
+                                                <table class="table table-hover mb-0">
+                                                    <thead>
+                                                        <tr>
+                                                            <th>Titolo</th>
+                                                            <th>Autore</th>
+                                                            <th>Data Prestito</th>
+                                                            <th>Data Restituzione</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        {% for prestito in data.prestiti_restituiti %}
+                                                        <tr>
+                                                            <td>{{ prestito.libro.titolo }}</td>
+                                                            <td>{{ prestito.libro.autore }}</td>
+                                                            <td>{{ prestito.data_prestito.strftime('%d/%m/%Y') }}</td>
+                                                            <td>{{ prestito.data_restituzione_effettiva.strftime('%d/%m/%Y') }}</td>
+                                                        </tr>
+                                                        {% endfor %}
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                            {% else %}
+                            <div class="alert alert-info">
+                                Nessun dato di prestito disponibile per gli utenti.
+                            </div>
+                            {% endfor %}
                         </div>
                     </div>
                 </div>

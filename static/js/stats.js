@@ -232,6 +232,29 @@ function filterStats(type) {
 }
 
 /**
+ * Filtra gli elementi nell'accordion dei prestiti per utente
+ */
+function filterUserLoans() {
+    const input = document.getElementById('user-loans-search');
+    const accordionItems = document.querySelectorAll('.user-loan-item');
+    
+    if (!input || !accordionItems) return;
+    
+    const filter = input.value.toUpperCase();
+    
+    accordionItems.forEach(item => {
+        const headerButton = item.querySelector('.accordion-button');
+        const headerText = headerButton.textContent || headerButton.innerText;
+        
+        if (headerText.toUpperCase().indexOf(filter) > -1) {
+            item.style.display = '';
+        } else {
+            item.style.display = 'none';
+        }
+    });
+}
+
+/**
  * Mostra un messaggio di notifica
  * @param {string} message - Messaggio da mostrare
  * @param {string} type - Tipo di messaggio (success, danger, warning, info)
