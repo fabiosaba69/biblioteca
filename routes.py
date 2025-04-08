@@ -756,21 +756,40 @@ def search_users_api():
 def search_user_by_barcode_api():
     """API per la ricerca di un utente tramite barcode"""
     barcode = request.args.get('barcode', '')
+    print(f"DEBUG: Ricerca utente con barcode: {barcode}")
+    
     if not barcode:
+        print("DEBUG: Barcode non fornito")
         return jsonify({'error': 'Barcode non fornito'}), 400
     
+    # Cerca prima con il barcode esatto
     user = User.query.filter_by(barcode=barcode).first()
+    
+    # Se non trovato, prova a cercare tutti gli utenti e controlla i loro barcode
     if not user:
+        print(f"DEBUG: Nessun utente trovato con barcode esatto: {barcode}")
+        all_users = User.query.all()
+        for u in all_users:
+            print(f"DEBUG: Utente ID {u.id}, Nome: {u.nome}, Barcode: {u.barcode}")
+            if u.barcode == barcode:
+                user = u
+                print(f"DEBUG: Trovato corrispondenza manuale per utente ID {u.id}")
+                break
+    
+    if not user:
+        print("DEBUG: Utente non trovato dopo la ricerca completa")
         return jsonify({'error': 'Utente non trovato'}), 404
     
-    return jsonify({
+    result = {
         'id': user.id,
         'nome': user.nome,
         'cognome': user.cognome,
         'nome_completo': f"{user.nome} {user.cognome}",
         'classe': user.classe,
         'barcode': user.barcode
-    })
+    }
+    print(f"DEBUG: Utente trovato: {result}")
+    return jsonify(result)
 
 @app.route('/api/search/libri')
 @login_required
