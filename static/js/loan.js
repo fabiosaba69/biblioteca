@@ -202,25 +202,50 @@ document.addEventListener('DOMContentLoaded', function() {
         // Mostra un messaggio di caricamento
         showMessage('Ricerca utente con barcode in corso...', 'info');
         
-        // Cerca tra tutti gli utenti per barcode tramite l'API di ricerca
+        // Prima prova con l'API di ricerca diretta per barcode
         fetch(`/api/search/utente-barcode?barcode=${encodeURIComponent(barcode)}`)
-            .then(response => response.json())
+            .then(response => {
+                if (!response.ok && response.status !== 404) {
+                    throw new Error(`Errore HTTP: ${response.status}`);
+                }
+                return response.json();
+            })
             .then(data => {
-                if (!data || !data.id) {
-                    showMessage(`Utente non trovato con barcode ${barcode}. Verifica il codice della tessera.`, 'warning');
+                if (data && data.id) {
+                    // Abbiamo trovato l'utente con l'API diretta
+                    showMessage(`Barcode riconosciuto come utente: ${data.nome} ${data.cognome}`, 'success');
+                    
+                    // Seleziona l'utente
+                    selectUser(data.id, `${data.nome} ${data.cognome}`, data.classe);
+                    
+                    // Focus sul campo successivo
+                    if (bookSearchInput) {
+                        bookSearchInput.focus();
+                    }
                     return;
                 }
                 
-                // Mostra un messaggio di successo
-                showMessage(`Barcode riconosciuto come utente: ${data.nome} ${data.cognome}`, 'success');
-                
-                // Seleziona l'utente
-                selectUser(data.id, `${data.nome} ${data.cognome}`, data.classe);
-                
-                // Focus sul campo successivo
-                if (bookSearchInput) {
-                    bookSearchInput.focus();
-                }
+                // Se non trovato con l'API diretta, prova con l'API di ricerca generale
+                return fetch(`/api/search/utenti?barcode=${encodeURIComponent(barcode)}`)
+                    .then(response => response.json())
+                    .then(users => {
+                        if (users && users.length > 0) {
+                            const user = users[0]; // Prendi il primo utente trovato
+                            showMessage(`Barcode riconosciuto come utente: ${user.nome} ${user.cognome}`, 'success');
+                            
+                            // Seleziona l'utente
+                            selectUser(user.id, `${user.nome} ${user.cognome}`, user.classe);
+                            
+                            // Focus sul campo successivo
+                            if (bookSearchInput) {
+                                bookSearchInput.focus();
+                            }
+                            return;
+                        }
+                        
+                        // Se non è stato trovato nessun utente
+                        showMessage(`Utente non trovato con barcode ${barcode}. Verifica il codice della tessera.`, 'warning');
+                    });
             })
             .catch(error => {
                 console.error('Errore nella ricerca utente:', error);
@@ -270,14 +295,15 @@ document.addEventListener('DOMContentLoaded', function() {
         // Mostra un messaggio di caricamento
         showMessage('Scansione codice a barre in corso...', 'info');
         
-        // Prova prima come utente
-        fetch(`/api/search/utente-barcode?barcode=${encodeURIComponent(barcode)}`)
+        // Prova prima come utente con l'API di ricerca generale - Nuova implementazione prioritaria
+        fetch(`/api/search/utenti?barcode=${encodeURIComponent(barcode)}`)
             .then(response => response.json())
-            .then(data => {
-                if (data && data.id) {
-                    // È un utente
-                    showMessage(`Barcode riconosciuto come utente: ${data.nome} ${data.cognome}`, 'success');
-                    selectUser(data.id, `${data.nome} ${data.cognome}`, data.classe);
+            .then(users => {
+                if (users && users.length > 0) {
+                    // È un utente trovato dalla ricerca generale
+                    const user = users[0];
+                    showMessage(`Barcode riconosciuto come utente: ${user.nome} ${user.cognome}`, 'success');
+                    selectUser(user.id, `${user.nome} ${user.cognome}`, user.classe);
                     
                     // Focus sul campo del libro
                     if (bookSearchInput) {
@@ -286,24 +312,46 @@ document.addEventListener('DOMContentLoaded', function() {
                     return;
                 }
                 
-                // Non è un utente, prova come libro
-                return fetch(`/api/libro/${barcode}`)
-                    .then(response => response.json())
-                    .then(bookData => {
-                        if (bookData.error) {
-                            showMessage(`Codice ${barcode} non riconosciuto come utente né come libro.`, 'warning');
+                // Fallback: Prova con l'API di ricerca utente specifica
+                return fetch(`/api/search/utente-barcode?barcode=${encodeURIComponent(barcode)}`)
+                    .then(response => {
+                        if (!response.ok && response.status !== 404) {
+                            throw new Error(`Errore HTTP: ${response.status}`);
+                        }
+                        return response.json();
+                    })
+                    .then(data => {
+                        if (data && data.id) {
+                            // È un utente trovato con l'API diretta
+                            showMessage(`Barcode riconosciuto come utente: ${data.nome} ${data.cognome}`, 'success');
+                            selectUser(data.id, `${data.nome} ${data.cognome}`, data.classe);
+                            
+                            // Focus sul campo del libro
+                            if (bookSearchInput) {
+                                bookSearchInput.focus();
+                            }
                             return;
                         }
                         
-                        // Verifica se il libro è disponibile
-                        if (!bookData.disponibile) {
-                            showMessage(`Libro trovato ma non disponibile: ${bookData.titolo}`, 'warning');
-                            return;
-                        }
-                        
-                        // Seleziona il libro
-                        showMessage(`Barcode riconosciuto come libro: ${bookData.titolo}`, 'success');
-                        selectBook(bookData.id, bookData.titolo, bookData.autore || '');
+                        // Non è un utente, prova come libro
+                        return fetch(`/api/libro/${barcode}`)
+                            .then(response => response.json())
+                            .then(bookData => {
+                                if (bookData.error) {
+                                    showMessage(`Codice ${barcode} non riconosciuto come utente né come libro.`, 'warning');
+                                    return;
+                                }
+                                
+                                // Verifica se il libro è disponibile
+                                if (!bookData.disponibile) {
+                                    showMessage(`Libro trovato ma non disponibile: ${bookData.titolo}`, 'warning');
+                                    return;
+                                }
+                                
+                                // Seleziona il libro
+                                showMessage(`Barcode riconosciuto come libro: ${bookData.titolo}`, 'success');
+                                selectBook(bookData.id, bookData.titolo, bookData.autore || '');
+                            });
                     });
             })
             .catch(error => {
@@ -317,6 +365,13 @@ document.addEventListener('DOMContentLoaded', function() {
      * @param {string} query - Termine di ricerca
      */
     function searchUsers(query) {
+        // Se sembra un barcode (solo numeri e lungo 13 caratteri)
+        if (/^\d+$/.test(query) && query.length >= 12) {
+            // Prova a cercarlo come barcode
+            processBarcodeUser(query);
+            return;
+        }
+        
         // Mostra un indicatore di caricamento
         userResults.innerHTML = '<div class="list-group-item text-center"><div class="spinner-border spinner-border-sm text-primary" role="status"></div> Ricerca in corso...</div>';
         
@@ -340,6 +395,9 @@ document.addEventListener('DOMContentLoaded', function() {
                     userInfo.innerHTML = `<strong>${user.nome} ${user.cognome}</strong>`;
                     if (user.classe) {
                         userInfo.innerHTML += `<br><small>Classe: ${user.classe}</small>`;
+                    }
+                    if (user.barcode) {
+                        userInfo.innerHTML += `<br><small class="text-muted">Barcode: ${user.barcode}</small>`;
                     }
                     div.appendChild(userInfo);
                     
@@ -372,6 +430,13 @@ document.addEventListener('DOMContentLoaded', function() {
      * @param {string} query - Termine di ricerca
      */
     function searchBooks(query) {
+        // Se sembra un ISBN o barcode (solo numeri e lungo)
+        if (/^\d+$/.test(query) && query.length >= 10) {
+            // Prova a cercarlo come ISBN/barcode
+            processBarcodeBook(query);
+            return;
+        }
+        
         // Mostra un indicatore di caricamento
         bookResults.innerHTML = '<div class="list-group-item text-center"><div class="spinner-border spinner-border-sm text-primary" role="status"></div> Ricerca in corso...</div>';
         

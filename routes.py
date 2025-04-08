@@ -728,6 +728,24 @@ def get_card_template(id):
 def search_users_api():
     """API per la ricerca di utenti"""
     query = request.args.get('q', '')
+    barcode = request.args.get('barcode', '')
+    
+    # Se è fornito un barcode, cerca per quello in via prioritaria
+    if barcode:
+        # Cerca l'utente per barcode esatto
+        user = User.query.filter_by(barcode=barcode).first()
+        if user:
+            # Return a list with a single user if we find a match
+            return jsonify([{
+                'id': user.id,
+                'nome': user.nome,
+                'cognome': user.cognome,
+                'nome_completo': f"{user.nome} {user.cognome}",
+                'classe': user.classe,
+                'barcode': user.barcode
+            }])
+    
+    # Altrimenti, cerca per nome/cognome/ecc
     if len(query) < 3:
         return jsonify([])
     
@@ -735,7 +753,8 @@ def search_users_api():
         (User.nome.ilike(f'%{query}%')) | 
         (User.cognome.ilike(f'%{query}%')) |
         (User.classe.ilike(f'%{query}%')) |
-        (User.username.ilike(f'%{query}%'))
+        (User.username.ilike(f'%{query}%')) |
+        (User.barcode.ilike(f'%{query}%'))  # Aggiungi anche ricerca per barcode parziale
     ).limit(10).all()
     
     result = []
