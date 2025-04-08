@@ -736,6 +736,41 @@ def get_loans_by_user(user_id):
         'prestiti': result
     })
 
+@app.route('/api/prestiti/tutti')
+@login_required
+def get_all_loans():
+    """API per ottenere tutti i prestiti"""
+    loans = Loan.query.all()
+    
+    result = []
+    for loan in loans:
+        result.append({
+            'id': loan.id,
+            'libro': {
+                'id': loan.libro.id,
+                'titolo': loan.libro.titolo,
+                'isbn': loan.libro.isbn,
+                'autore': loan.libro.autore
+            },
+            'utente': {
+                'id': loan.utente.id,
+                'nome': loan.utente.nome,
+                'cognome': loan.utente.cognome,
+                'classe': loan.utente.classe
+            },
+            'data_prestito': loan.data_prestito.strftime('%d/%m/%Y'),
+            'data_restituzione_prevista': loan.data_restituzione_prevista.strftime('%d/%m/%Y') if loan.data_restituzione_prevista else None,
+            'data_restituzione_effettiva': loan.data_restituzione_effettiva.strftime('%d/%m/%Y') if loan.data_restituzione_effettiva else None,
+            'stato': 'Restituito' if loan.data_restituzione_effettiva else 'In prestito'
+        })
+    
+    return jsonify({
+        'prestiti': result,
+        'totale_prestiti': len(result),
+        'totale_prestiti_attivi': sum(1 for item in result if item['stato'] == 'In prestito'),
+        'totale_prestiti_restituiti': sum(1 for item in result if item['stato'] == 'Restituito')
+    })
+
 @app.route('/api/modello-tessera/<int:id>')
 @login_required
 def get_card_template(id):

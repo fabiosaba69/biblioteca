@@ -24,6 +24,9 @@
         </div>
     </div>
     <div class="col-md-4 text-md-end">
+        <button id="print-all-loans" class="btn btn-info me-2">
+            <i class="fas fa-print me-1"></i> Stampa Prestiti
+        </button>
         <a href="{{ url_for('register') }}" class="btn btn-success">
             <i class="fas fa-plus-circle me-2"></i> Nuovo Utente
         </a>
@@ -79,6 +82,9 @@
                                     <a href="{{ url_for('edit_user', id=user.id) }}" class="btn btn-sm btn-primary">
                                         <i class="fas fa-edit"></i>
                                     </a>
+                                    <button type="button" class="btn btn-sm btn-info" onclick="printUserLoans({{ user.id }}, '{{ user.nome }} {{ user.cognome }}')">
+                                        <i class="fas fa-print"></i>
+                                    </button>
                                     {% if current_user.id != user.id and current_user.is_admin() %}
                                     <button type="button" class="btn btn-sm btn-danger" data-bs-toggle="modal" data-bs-target="#deleteUserModal{{ user.id }}">
                                         <i class="fas fa-trash"></i>
@@ -162,4 +168,12 @@
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block scripts %}
+<!-- Script jsPDF per generazione PDF -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
+<!-- Script per la gestione degli utenti -->
+<script src="{{ url_for('static', filename='js/users.js') }}"></script>
 {% endblock %}
