@@ -255,6 +255,228 @@ function filterUserLoans() {
 }
 
 /**
+ * Stampa i prestiti di un utente specifico in formato PDF
+ * @param {number} userId - ID dell'utente
+ * @param {string} userName - Nome dell'utente
+ */
+function printUserLoans(userId, userName) {
+    // Evita che l'evento si propaghi all'accordion-button
+    event.stopPropagation();
+    
+    // Mostra un messaggio di caricamento
+    showMessage('Generazione del PDF in corso...', 'info');
+    
+    // Recupera i dati dell'utente tramite API
+    fetch(`/api/prestiti/utente/${userId}`)
+        .then(response => response.json())
+        .then(data => {
+            // Inizializza jsPDF
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            
+            // Aggiungi intestazione
+            doc.setFontSize(18);
+            doc.text('Biblioteca Scolastica', 105, 15, { align: 'center' });
+            doc.setFontSize(14);
+            doc.text(`Prestiti dell'utente: ${userName}`, 105, 25, { align: 'center' });
+            
+            // Aggiungi dettagli utente
+            doc.setFontSize(12);
+            doc.text(`Classe: ${data.utente.classe || 'N/D'}`, 14, 35);
+            
+            // Data di generazione
+            const oggi = new Date().toLocaleDateString('it-IT');
+            doc.text(`Generato il: ${oggi}`, 14, 42);
+            
+            // Filtra i prestiti attivi e restituiti
+            const prestitiAttivi = data.prestiti.filter(p => p.stato === 'In prestito');
+            const prestitiRestituiti = data.prestiti.filter(p => p.stato === 'Restituito');
+            
+            let yPos = 55;
+            
+            // Sezione prestiti attivi
+            if (prestitiAttivi.length > 0) {
+                doc.setFontSize(14);
+                doc.setTextColor(46, 125, 50);  // Verde
+                doc.text('Prestiti Attivi', 14, yPos);
+                doc.setTextColor(0, 0, 0);  // Nero
+                doc.setFontSize(12);
+                
+                // Tabella prestiti attivi
+                doc.autoTable({
+                    startY: yPos + 5,
+                    head: [['Titolo', 'Data Prestito', 'Restituzione Prevista']],
+                    body: prestitiAttivi.map(prestito => [
+                        prestito.libro.titolo,
+                        prestito.data_prestito,
+                        prestito.data_restituzione_prevista || 'N/D'
+                    ]),
+                    theme: 'grid',
+                    headStyles: { fillColor: [46, 125, 50], textColor: [255, 255, 255] },
+                    margin: { left: 14, right: 14 }
+                });
+                
+                yPos = doc.lastAutoTable.finalY + 15;
+            }
+            
+            // Sezione prestiti restituiti
+            if (prestitiRestituiti.length > 0) {
+                // Se la pagina sta diventando troppo piena, aggiungi una nuova pagina
+                if (yPos > 230) {
+                    doc.addPage();
+                    yPos = 20;
+                }
+                
+                doc.setFontSize(14);
+                doc.setTextColor(2, 136, 209);  // Azzurro
+                doc.text('Prestiti Restituiti', 14, yPos);
+                doc.setTextColor(0, 0, 0);  // Nero
+                doc.setFontSize(12);
+                
+                // Tabella prestiti restituiti
+                doc.autoTable({
+                    startY: yPos + 5,
+                    head: [['Titolo', 'Data Prestito', 'Data Restituzione']],
+                    body: prestitiRestituiti.map(prestito => [
+                        prestito.libro.titolo,
+                        prestito.data_prestito,
+                        prestito.data_restituzione_effettiva
+                    ]),
+                    theme: 'grid',
+                    headStyles: { fillColor: [2, 136, 209], textColor: [255, 255, 255] },
+                    margin: { left: 14, right: 14 }
+                });
+            }
+            
+            // Aggiungi il piè di pagina
+            const pageCount = doc.internal.getNumberOfPages();
+            for (let i = 1; i <= pageCount; i++) {
+                doc.setPage(i);
+                doc.setFontSize(10);
+                doc.setTextColor(150);
+                doc.text(
+                    `Pagina ${i} di ${pageCount} - Biblioteca Scolastica - Fabio SABATELLI`,
+                    105, 
+                    doc.internal.pageSize.height - 10, 
+                    { align: 'center' }
+                );
+            }
+            
+            // Salva il PDF
+            doc.save(`prestiti_${userName.replace(/\s+/g, '_')}.pdf`);
+            
+            // Mostra un messaggio di conferma
+            showMessage('PDF generato con successo!', 'success');
+        })
+        .catch(error => {
+            console.error('Errore nella generazione del PDF:', error);
+            showMessage('Errore nella generazione del PDF. Riprova più tardi.', 'danger');
+        });
+}
+
+/**
+ * Stampa un riepilogo dei prestiti di tutti gli utenti
+ */
+function printAllUserLoans() {
+    // Mostra un messaggio di caricamento
+    showMessage('Generazione del PDF completo in corso...', 'info');
+    
+    // Raccogli i dati da tutti gli elementi dell'accordion
+    const allUserLoans = [];
+    const items = document.querySelectorAll('.user-loan-item');
+    
+    items.forEach(item => {
+        const headerButton = item.querySelector('.accordion-button');
+        const userNameElement = headerButton.querySelector('strong');
+        const userId = item.querySelector('.accordion-collapse').id.replace('collapse', '');
+        
+        if (userNameElement) {
+            const userName = userNameElement.textContent.trim();
+            allUserLoans.push({ id: userId, name: userName });
+        }
+    });
+    
+    // Se non ci sono utenti, mostra un messaggio di errore
+    if (allUserLoans.length === 0) {
+        showMessage('Nessun utente con prestiti trovato', 'warning');
+        return;
+    }
+    
+    // Inizializza jsPDF
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
+    
+    // Aggiungi intestazione
+    doc.setFontSize(18);
+    doc.text('Biblioteca Scolastica', 105, 15, { align: 'center' });
+    doc.setFontSize(14);
+    doc.text('Riepilogo Prestiti per Utente', 105, 25, { align: 'center' });
+    
+    // Data di generazione
+    const oggi = new Date().toLocaleDateString('it-IT');
+    doc.setFontSize(12);
+    doc.text(`Generato il: ${oggi}`, 14, 35);
+    
+    // Tabella riepilogativa degli utenti
+    const usersSummary = Array.from(items).map(item => {
+        const headerButton = item.querySelector('.accordion-button');
+        const userName = headerButton.querySelector('strong').textContent.trim();
+        const activeLoans = headerButton.querySelector('.badge.bg-success').textContent.split(':')[1].trim();
+        const returnedLoans = headerButton.querySelector('.badge.bg-info').textContent.split(':')[1].trim();
+        return [userName, activeLoans, returnedLoans, (parseInt(activeLoans) + parseInt(returnedLoans)).toString()];
+    });
+    
+    // Aggiungi la tabella riepilogativa
+    doc.autoTable({
+        startY: 45,
+        head: [['Utente', 'Prestiti Attivi', 'Prestiti Restituiti', 'Totale']],
+        body: usersSummary,
+        theme: 'grid',
+        headStyles: { fillColor: [97, 97, 97], textColor: [255, 255, 255] },
+        margin: { left: 14, right: 14 }
+    });
+    
+    // Calcola i totali
+    const totals = usersSummary.reduce((acc, row) => {
+        return [
+            'TOTALE',
+            acc[1] + parseInt(row[1]),
+            acc[2] + parseInt(row[2]),
+            acc[3] + parseInt(row[3])
+        ];
+    }, ['TOTALE', 0, 0, 0]);
+    
+    // Aggiungi la riga dei totali
+    doc.autoTable({
+        startY: doc.lastAutoTable.finalY,
+        body: [totals],
+        theme: 'grid',
+        bodyStyles: { fillColor: [240, 240, 240], fontStyle: 'bold' },
+        margin: { left: 14, right: 14 }
+    });
+    
+    // Aggiungi il piè di pagina
+    const pageCount = doc.internal.getNumberOfPages();
+    for (let i = 1; i <= pageCount; i++) {
+        doc.setPage(i);
+        doc.setFontSize(10);
+        doc.setTextColor(150);
+        doc.text(
+            `Pagina ${i} di ${pageCount} - Biblioteca Scolastica - Fabio SABATELLI`,
+            105, 
+            doc.internal.pageSize.height - 10, 
+            { align: 'center' }
+        );
+    }
+    
+    // Salva il PDF
+    doc.save(`riepilogo_prestiti_${oggi.replace(/\//g, '-')}.pdf`);
+    
+    // Mostra un messaggio di conferma
+    showMessage('PDF riepilogativo generato con successo!', 'success');
+}
+
+/**
  * Mostra un messaggio di notifica
  * @param {string} message - Messaggio da mostrare
  * @param {string} type - Tipo di messaggio (success, danger, warning, info)

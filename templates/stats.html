@@ -258,8 +258,13 @@
                     
                     <!-- Prestiti per Utente Tab -->
                     <div class="tab-pane fade" id="user-loans-content" role="tabpanel" aria-labelledby="user-loans-tab">
-                        <div class="input-group mb-3" style="max-width: 300px;">
-                            <input type="text" class="form-control" id="user-loans-search" placeholder="Filtra utenti..." onkeyup="filterUserLoans()">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <div class="input-group" style="max-width: 300px;">
+                                <input type="text" class="form-control" id="user-loans-search" placeholder="Filtra utenti..." onkeyup="filterUserLoans()">
+                            </div>
+                            <button class="btn btn-outline-secondary" onclick="printAllUserLoans()">
+                                <i class="fas fa-print me-2"></i> Stampa Tutti i Prestiti
+                            </button>
                         </div>
                         
                         <div class="accordion" id="userLoansAccordion">
@@ -276,9 +281,13 @@
                                                 <span class="ms-2 badge bg-secondary">{{ data.utente.classe }}</span>
                                                 {% endif %}
                                             </div>
-                                            <div>
+                                            <div class="d-flex align-items-center">
                                                 <span class="badge bg-success me-1">Attivi: {{ data.totale_attivi }}</span>
-                                                <span class="badge bg-info">Restituiti: {{ data.totale_restituiti }}</span>
+                                                <span class="badge bg-info me-2">Restituiti: {{ data.totale_restituiti }}</span>
+                                                <button type="button" class="btn btn-sm btn-outline-secondary ms-2" 
+                                                        onclick="printUserLoans({{ data.utente.id }}, '{{ data.utente.cognome }} {{ data.utente.nome }}')">
+                                                    <i class="fas fa-print"></i>
+                                                </button>
                                             </div>
                                         </div>
                                     </button>
