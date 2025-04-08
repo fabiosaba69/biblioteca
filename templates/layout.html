@@ -80,7 +80,29 @@
                         </a>
                     </li>
                     {% endif %}
+                    
+                    {% if current_user.is_teacher() %}
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle {% if '/modelli-tessera' in request.path or 'tessera' in request.path %}active{% endif %}" href="#" id="navCardDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="fas fa-id-card"></i> Tessere
+                        </a>
+                        <ul class="dropdown-menu" aria-labelledby="navCardDropdown">
+                            <li>
+                                <a class="dropdown-item" href="{{ url_for('card_templates') }}">
+                                    <i class="fas fa-edit"></i> Gestione Modelli
+                                </a>
+                            </li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li>
+                                <a class="dropdown-item" href="{{ url_for('add_template') }}">
+                                    <i class="fas fa-plus"></i> Nuovo Modello
+                                </a>
+                            </li>
+                        </ul>
+                    </li>
                     {% endif %}
+                    
+                    {% endif %} <!-- Chiusura del if current_user.is_authenticated -->
                 </ul>
                 
                 <ul class="navbar-nav">

@@ -108,7 +108,7 @@
             </div>
             <div class="card-body">
                 <canvas id="user-loans-chart" 
-                        data-users="{{ most_active_users|map(attribute='0')|map('attr', 'nome')|list|zip(most_active_users|map(attribute='0')|map('attr', 'cognome')|list)|map('join', ' ')|list|tojson }}" 
+                        data-users="{{ most_active_users_names|tojson }}" 
                         data-counts="{{ most_active_users|map(attribute='1')|list|tojson }}"></canvas>
             </div>
         </div>

@@ -586,6 +586,9 @@ def statistics():
         ).count()
         monthly_loans.append(count)
     
+    # Prepara la lista dei nomi completi per gli utenti più attivi
+    most_active_users_names = [f"{user.nome} {user.cognome}" for user, _ in most_active_users]
+    
     return render_template('stats.html', 
                           total_books=total_books,
                           total_users=total_users,
@@ -593,6 +596,7 @@ def statistics():
                           active_loans=active_loans,
                           most_loaned_books=most_loaned_books,
                           most_active_users=most_active_users,
+                          most_active_users_names=most_active_users_names,
                           monthly_loans=monthly_loans)
 
 # ---- API ----
