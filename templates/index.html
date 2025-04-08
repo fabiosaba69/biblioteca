@@ -1,0 +1,172 @@
+{% extends 'base.html' %}
+
+{% block title %}Home - Sistema di Gestione Biblioteca{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card bg-primary text-white">
+            <div class="card-body">
+                <h1 class="card-title"><i class="bi bi-book"></i> Sistema di Gestione Biblioteca</h1>
+                <p class="card-text">Benvenuto nel sistema di gestione della biblioteca per scuole primarie. Utilizza la barra di navigazione per accedere alle diverse funzionalità.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-4 mb-3">
+        <div class="card h-100">
+            <div class="card-body">
+                <h5 class="card-title"><i class="bi bi-journal-richtext"></i> Libri</h5>
+                <h1 class="display-4">{{ num_libri }}</h1>
+                <p class="card-text">Totale libri in archivio</p>
+                <a href="{{ url_for('libri') }}" class="btn btn-primary">Gestisci Libri</a>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4 mb-3">
+        <div class="card h-100">
+            <div class="card-body">
+                <h5 class="card-title"><i class="bi bi-people"></i> Utenti</h5>
+                <h1 class="display-4">{{ num_utenti }}</h1>
+                <p class="card-text">Totale utenti registrati</p>
+                <a href="{{ url_for('utenti') }}" class="btn btn-primary">Gestisci Utenti</a>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4 mb-3">
+        <div class="card h-100">
+            <div class="card-body">
+                <h5 class="card-title"><i class="bi bi-arrow-left-right"></i> Prestiti Attivi</h5>
+                <h1 class="display-4">{{ num_prestiti_attivi }}</h1>
+                <p class="card-text">Prestiti attualmente in corso</p>
+                <a href="{{ url_for('prestiti') }}" class="btn btn-primary">Gestisci Prestiti</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-6 mb-3">
+        <div class="card h-100">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-clock-history"></i> Prestiti Recenti</h5>
+            </div>
+            <div class="card-body">
+                {% if prestiti_recenti %}
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Utente</th>
+                                <th>Libro</th>
+                                <th>Data</th>
+                                <th>Stato</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for prestito in prestiti_recenti %}
+                            <tr>
+                                <td>{{ prestito.utente.nome_completo }}</td>
+                                <td>{{ prestito.libro.titolo }}</td>
+                                <td>{{ prestito.data_prestito.strftime('%d/%m/%Y') }}</td>
+                                <td>
+                                    {% if prestito.in_corso %}
+                                        {% if prestito.in_ritardo %}
+                                        <span class="badge bg-danger">In ritardo</span>
+                                        {% else %}
+                                        <span class="badge bg-primary">In corso</span>
+                                        {% endif %}
+                                    {% else %}
+                                        <span class="badge bg-success">Restituito</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <p class="text-muted">Nessun prestito recente.</p>
+                {% endif %}
+                <a href="{{ url_for('prestiti') }}" class="btn btn-outline-primary">Vedi tutti</a>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6 mb-3">
+        <div class="card h-100">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-journal-plus"></i> Libri Aggiunti Recentemente</h5>
+            </div>
+            <div class="card-body">
+                {% if libri_recenti %}
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Titolo</th>
+                                <th>Autore</th>
+                                <th>ISBN</th>
+                                <th>Disponibilità</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for libro in libri_recenti %}
+                            <tr>
+                                <td>{{ libro.titolo }}</td>
+                                <td>{{ libro.autore }}</td>
+                                <td>{{ libro.isbn }}</td>
+                                <td>
+                                    {% if libro.disponibile %}
+                                    <span class="badge bg-success">Disponibile</span>
+                                    {% else %}
+                                    <span class="badge bg-warning">In prestito</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <p class="text-muted">Nessun libro aggiunto recentemente.</p>
+                {% endif %}
+                <a href="{{ url_for('libri') }}" class="btn btn-outline-primary">Vedi tutti</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-tools"></i> Azioni Rapide</h5>
+            </div>
+            <div class="card-body">
+                <div class="d-flex flex-wrap gap-2">
+                    <a href="{{ url_for('libri') }}" class="btn btn-outline-primary">
+                        <i class="bi bi-search"></i> Cerca Libri
+                    </a>
+                    <a href="{{ url_for('nuovo_libro') }}" class="btn btn-outline-success">
+                        <i class="bi bi-journal-plus"></i> Aggiungi Libro
+                    </a>
+                    <a href="{{ url_for('importa_libri') }}" class="btn btn-outline-info">
+                        <i class="bi bi-upload"></i> Importa Libri
+                    </a>
+                    <a href="{{ url_for('nuovo_utente') }}" class="btn btn-outline-success">
+                        <i class="bi bi-person-plus"></i> Aggiungi Utente
+                    </a>
+                    <a href="{{ url_for('nuovo_prestito') }}" class="btn btn-outline-primary">
+                        <i class="bi bi-arrow-right-circle"></i> Registra Prestito
+                    </a>
+                    <a href="{{ url_for('statistiche') }}" class="btn btn-outline-info">
+                        <i class="bi bi-bar-chart"></i> Visualizza Statistiche
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

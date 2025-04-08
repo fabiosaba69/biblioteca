@@ -1,0 +1,270 @@
+{% extends 'base.html' %}
+
+{% block title %}Gestione Libri - Sistema Biblioteca{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1><i class="bi bi-journal-richtext"></i> Gestione Libri</h1>
+    <div>
+        <a href="{{ url_for('nuovo_libro') }}" class="btn btn-success">
+            <i class="bi bi-journal-plus"></i> Aggiungi Libro
+        </a>
+        <a href="{{ url_for('importa_libri') }}" class="btn btn-primary">
+            <i class="bi bi-upload"></i> Importa Libri
+        </a>
+    </div>
+</div>
+
+<div class="card mb-4">
+    <div class="card-body">
+        <form action="{{ url_for('libri') }}" method="get" class="row g-3">
+            <div class="col-md-10">
+                <div class="input-group">
+                    <span class="input-group-text"><i class="bi bi-search"></i></span>
+                    <input type="text" class="form-control" name="search" placeholder="Cerca per titolo, autore o ISBN..." value="{{ search }}">
+                </div>
+            </div>
+            <div class="col-md-2">
+                <button type="submit" class="btn btn-primary w-100">Cerca</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Barra scanner ISBN -->
+<div class="card mb-4">
+    <div class="card-header">
+        <h5 class="mb-0"><i class="bi bi-upc-scan"></i> Ricerca Rapida per ISBN</h5>
+    </div>
+    <div class="card-body">
+        <div class="row g-3">
+            <div class="col-md-10">
+                <div class="input-group">
+                    <span class="input-group-text"><i class="bi bi-upc"></i></span>
+                    <input type="text" class="form-control" id="isbn-scanner" placeholder="Scansiona o inserisci un ISBN...">
+                </div>
+            </div>
+            <div class="col-md-2">
+                <button type="button" id="cerca-isbn" class="btn btn-primary w-100">Cerca</button>
+            </div>
+        </div>
+        <div id="risultato-isbn" class="mt-3" style="display: none;">
+            <!-- Qui verranno visualizzati i risultati della ricerca -->
+        </div>
+    </div>
+</div>
+
+{% if libri.items %}
+<div class="table-responsive">
+    <table class="table table-striped table-hover">
+        <thead class="table-dark">
+            <tr>
+                <th>ISBN</th>
+                <th>Titolo</th>
+                <th>Autore</th>
+                <th>Editore</th>
+                <th>Anno</th>
+                <th>Disponibilità</th>
+                <th>Azioni</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for libro in libri.items %}
+            <tr>
+                <td>{{ libro.isbn }}</td>
+                <td>{{ libro.titolo }}</td>
+                <td>{{ libro.autore }}</td>
+                <td>{{ libro.editore }}</td>
+                <td>{{ libro.anno_pubblicazione }}</td>
+                <td>
+                    {% if libro.disponibile %}
+                    <span class="badge bg-success">Disponibile</span>
+                    {% else %}
+                    <span class="badge bg-warning">In prestito</span>
+                    {% endif %}
+                </td>
+                <td>
+                    <div class="btn-group">
+                        <a href="{{ url_for('visualizza_libro', libro_id=libro.id) }}" class="btn btn-sm btn-info">
+                            <i class="bi bi-eye"></i>
+                        </a>
+                        <a href="{{ url_for('modifica_libro', libro_id=libro.id) }}" class="btn btn-sm btn-primary">
+                            <i class="bi bi-pencil"></i>
+                        </a>
+                        <button type="button" class="btn btn-sm btn-danger" data-bs-toggle="modal" data-bs-target="#deleteModal{{ libro.id }}">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                    </div>
+                    
+                    <!-- Modal per conferma eliminazione -->
+                    <div class="modal fade" id="deleteModal{{ libro.id }}" tabindex="-1" aria-labelledby="deleteModalLabel{{ libro.id }}" aria-hidden="true">
+                        <div class="modal-dialog">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h5 class="modal-title" id="deleteModalLabel{{ libro.id }}">Conferma Eliminazione</h5>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                </div>
+                                <div class="modal-body">
+                                    Sei sicuro di voler eliminare il libro <strong>{{ libro.titolo }}</strong>?<br>
+                                    Questa azione non può essere annullata.
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annulla</button>
+                                    <form action="{{ url_for('elimina_libro', libro_id=libro.id) }}" method="post">
+                                        <button type="submit" class="btn btn-danger">Elimina</button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<!-- Paginazione -->
+<nav aria-label="Navigazione pagine">
+    <ul class="pagination justify-content-center">
+        <li class="page-item {% if not libri.has_prev %}disabled{% endif %}">
+            <a class="page-link" href="{% if libri.has_prev %}{{ url_for('libri', page=libri.prev_num, search=search) }}{% else %}#{% endif %}" aria-label="Previous">
+                <span aria-hidden="true">&laquo;</span>
+            </a>
+        </li>
+        
+        {% for page_num in libri.iter_pages() %}
+            {% if page_num %}
+                <li class="page-item {% if page_num == libri.page %}active{% endif %}">
+                    <a class="page-link" href="{{ url_for('libri', page=page_num, search=search) }}">{{ page_num }}</a>
+                </li>
+            {% else %}
+                <li class="page-item disabled">
+                    <span class="page-link">...</span>
+                </li>
+            {% endif %}
+        {% endfor %}
+        
+        <li class="page-item {% if not libri.has_next %}disabled{% endif %}">
+            <a class="page-link" href="{% if libri.has_next %}{{ url_for('libri', page=libri.next_num, search=search) }}{% else %}#{% endif %}" aria-label="Next">
+                <span aria-hidden="true">&raquo;</span>
+            </a>
+        </li>
+    </ul>
+</nav>
+
+{% else %}
+<div class="alert alert-info">
+    <i class="bi bi-info-circle"></i> Nessun libro trovato. {% if search %}Prova a modificare i criteri di ricerca.{% else %}Aggiungi un nuovo libro o importa libri esistenti.{% endif %}
+</div>
+{% endif %}
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const isbnInput = document.getElementById('isbn-scanner');
+    const cercaBtn = document.getElementById('cerca-isbn');
+    const risultatoDiv = document.getElementById('risultato-isbn');
+    
+    // Funzione per cercare un libro tramite ISBN
+    function cercaLibroPerISBN(isbn) {
+        risultatoDiv.innerHTML = '<div class="text-center"><div class="spinner-border text-primary" role="status"><span class="visually-hidden">Caricamento...</span></div></div>';
+        risultatoDiv.style.display = 'block';
+        
+        fetch(`/api/isbn/${isbn}`)
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Libro non trovato');
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data.esistente) {
+                    // Se il libro esiste già nel database
+                    risultatoDiv.innerHTML = `
+                        <div class="alert alert-info">
+                            <h5>Libro già presente nel sistema</h5>
+                            <p><strong>Titolo:</strong> ${data.titolo}</p>
+                            <p><strong>Autore:</strong> ${data.autore}</p>
+                            <p><strong>ISBN:</strong> ${data.isbn}</p>
+                            <a href="/libri/${data.id}" class="btn btn-primary">Visualizza Dettagli</a>
+                        </div>
+                    `;
+                } else {
+                    // Se il libro non esiste, mostra le informazioni trovate online e permetti di aggiungerlo
+                    let imgHtml = '';
+                    if (data.immagine_url) {
+                        imgHtml = `<div class="col-md-3 text-center">
+                                    <img src="${data.immagine_url}" alt="Copertina" class="img-fluid rounded" style="max-height: 200px;">
+                                  </div>`;
+                    }
+                    
+                    risultatoDiv.innerHTML = `
+                        <div class="card">
+                            <div class="card-header bg-success text-white">
+                                <h5 class="mb-0">Trovato nuovo libro</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    ${imgHtml}
+                                    <div class="${data.immagine_url ? 'col-md-9' : 'col-md-12'}">
+                                        <h4>${data.titolo || 'Titolo non disponibile'}</h4>
+                                        <p><strong>Autore:</strong> ${data.autore || 'Non disponibile'}</p>
+                                        <p><strong>Editore:</strong> ${data.editore || 'Non disponibile'}</p>
+                                        <p><strong>Anno:</strong> ${data.anno_pubblicazione || 'Non disponibile'}</p>
+                                        <p><strong>ISBN:</strong> ${data.isbn}</p>
+                                        <form action="/libri/nuovo" method="post" class="mt-3">
+                                            <input type="hidden" name="isbn" value="${data.isbn}">
+                                            <input type="hidden" name="titolo" value="${data.titolo || ''}">
+                                            <input type="hidden" name="autore" value="${data.autore || ''}">
+                                            <input type="hidden" name="editore" value="${data.editore || ''}">
+                                            <input type="hidden" name="anno_pubblicazione" value="${data.anno_pubblicazione || ''}">
+                                            <input type="hidden" name="descrizione" value="${data.descrizione || ''}">
+                                            <input type="hidden" name="immagine_url" value="${data.immagine_url || ''}">
+                                            <button type="submit" class="btn btn-success">
+                                                <i class="bi bi-plus-circle"></i> Aggiungi al Catalogo
+                                            </button>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }
+            })
+            .catch(error => {
+                risultatoDiv.innerHTML = `
+                    <div class="alert alert-warning">
+                        <i class="bi bi-exclamation-triangle"></i> Impossibile trovare informazioni per l'ISBN ${isbn}.<br>
+                        <a href="/libri/nuovo" class="btn btn-sm btn-primary mt-2">Aggiungi Manualmente</a>
+                    </div>
+                `;
+            });
+    }
+    
+    // Evento click per il pulsante di ricerca
+    cercaBtn.addEventListener('click', function() {
+        const isbn = isbnInput.value.trim();
+        if (isbn) {
+            cercaLibroPerISBN(isbn);
+        } else {
+            risultatoDiv.innerHTML = '<div class="alert alert-danger"><i class="bi bi-exclamation-triangle"></i> Inserisci un ISBN valido.</div>';
+            risultatoDiv.style.display = 'block';
+        }
+    });
+    
+    // Evento keypress per l'input ISBN (permette di premere invio)
+    isbnInput.addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            cercaBtn.click();
+        }
+    });
+    
+    // Focus sull'input ISBN quando la pagina si carica
+    isbnInput.focus();
+});
+</script>
+{% endblock %}

@@ -1,0 +1,243 @@
+{% extends 'base.html' %}
+
+{% block title %}
+{% if utente %}
+    {% if modifica %}Modifica{% else %}Dettagli{% endif %} Utente - {{ utente.cognome }} {{ utente.nome }}
+{% else %}
+    Nuovo Utente
+{% endif %}
+{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header">
+        <h1 class="h3 mb-0">
+            {% if utente %}
+                {% if modifica %}
+                    <i class="bi bi-pencil-square"></i> Modifica Utente
+                {% else %}
+                    <i class="bi bi-person"></i> Dettagli Utente
+                {% endif %}
+            {% else %}
+                <i class="bi bi-person-plus"></i> Aggiungi Nuovo Utente
+            {% endif %}
+        </h1>
+    </div>
+    <div class="card-body">
+        {% if utente and not modifica %}
+            <div class="row mb-4">
+                <div class="col-md-4 mb-3">
+                    <div class="card h-100">
+                        <div class="card-header">
+                            <h5 class="mb-0">Informazioni Utente</h5>
+                        </div>
+                        <div class="card-body">
+                            <p><strong>Nome:</strong> {{ utente.nome }}</p>
+                            <p><strong>Cognome:</strong> {{ utente.cognome }}</p>
+                            <p><strong>Classe:</strong> {{ utente.classe }}</p>
+                            <p><strong>Codice:</strong> {{ utente.codice }}</p>
+                            <p><strong>Data Registrazione:</strong> {{ utente.data_registrazione.strftime('%d/%m/%Y') }}</p>
+                            <p>
+                                <strong>Stato:</strong> 
+                                {% if utente.attivo %}
+                                    <span class="badge bg-success">Attivo</span>
+                                {% else %}
+                                    <span class="badge bg-danger">Inattivo</span>
+                                {% endif %}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-4 mb-3">
+                    <div class="card h-100">
+                        <div class="card-header">
+                            <h5 class="mb-0">Tessera Utente</h5>
+                        </div>
+                        <div class="card-body text-center">
+                            <svg id="barcode"></svg>
+                            <div class="mt-3">
+                                <a href="{{ url_for('editor_tessera', utente_id=utente.id) }}" class="btn btn-primary">
+                                    <i class="bi bi-pencil"></i> Personalizza Tessera
+                                </a>
+                                <a href="{{ url_for('stampa_tessera', utente_id=utente.id) }}" class="btn btn-info" target="_blank">
+                                    <i class="bi bi-printer"></i> Stampa Tessera
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-4 mb-3">
+                    <div class="card h-100">
+                        <div class="card-header">
+                            <h5 class="mb-0">Statistiche Prestiti</h5>
+                        </div>
+                        <div class="card-body">
+                            <p><strong>Prestiti Totali:</strong> {{ prestiti|length }}</p>
+                            <p><strong>Prestiti Attivi:</strong> {{ prestiti|selectattr('in_corso')|list|length }}</p>
+                            <p><strong>Prestiti In Ritardo:</strong> {{ prestiti|selectattr('in_ritardo')|list|length }}</p>
+                            <p><strong>Prestiti Conclusi:</strong> {{ prestiti|rejectattr('in_corso')|list|length }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="mt-4 mb-4">
+                <div class="d-flex justify-content-end">
+                    <a href="{{ url_for('modifica_utente', utente_id=utente.id) }}" class="btn btn-primary me-2">
+                        <i class="bi bi-pencil"></i> Modifica
+                    </a>
+                    <button type="button" class="btn btn-danger me-2" data-bs-toggle="modal" data-bs-target="#deleteModal">
+                        <i class="bi bi-trash"></i> Elimina
+                    </button>
+                    <a href="{{ url_for('utenti') }}" class="btn btn-secondary">
+                        <i class="bi bi-arrow-left"></i> Torna all'elenco
+                    </a>
+                </div>
+                
+                <!-- Modal per conferma eliminazione -->
+                <div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
+                    <div class="modal-dialog">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title" id="deleteModalLabel">Conferma Eliminazione</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                            </div>
+                            <div class="modal-body">
+                                Sei sicuro di voler eliminare l'utente <strong>{{ utente.cognome }} {{ utente.nome }}</strong>?<br>
+                                Questa azione non può essere annullata.
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annulla</button>
+                                <form action="{{ url_for('elimina_utente', utente_id=utente.id) }}" method="post">
+                                    <button type="submit" class="btn btn-danger">Elimina</button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            {% if prestiti %}
+            <div class="mt-4">
+                <h4>Storico Prestiti</h4>
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Libro</th>
+                                <th>Data Prestito</th>
+                                <th>Data Restituzione Prevista</th>
+                                <th>Data Restituzione Effettiva</th>
+                                <th>Stato</th>
+                                <th>Azioni</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for prestito in prestiti %}
+                            <tr>
+                                <td>
+                                    <a href="{{ url_for('visualizza_libro', libro_id=prestito.libro.id) }}">
+                                        {{ prestito.libro.titolo }}
+                                    </a>
+                                </td>
+                                <td>{{ prestito.data_prestito.strftime('%d/%m/%Y') }}</td>
+                                <td>{{ prestito.data_restituzione_prevista.strftime('%d/%m/%Y') }}</td>
+                                <td>
+                                    {% if prestito.data_restituzione_effettiva %}
+                                        {{ prestito.data_restituzione_effettiva.strftime('%d/%m/%Y') }}
+                                    {% else %}
+                                        -
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if prestito.in_corso %}
+                                        {% if prestito.in_ritardo %}
+                                            <span class="badge bg-danger">In ritardo</span>
+                                        {% else %}
+                                            <span class="badge bg-primary">In corso</span>
+                                        {% endif %}
+                                    {% else %}
+                                        <span class="badge bg-success">Restituito</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if prestito.in_corso %}
+                                    <form action="{{ url_for('restituisci_libro', prestito_id=prestito.id) }}" method="post">
+                                        <button type="submit" class="btn btn-sm btn-success">
+                                            <i class="bi bi-check-circle"></i> Restituisci
+                                        </button>
+                                    </form>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            {% endif %}
+            
+        {% else %}
+            <!-- Form per aggiungere o modificare un utente -->
+            <form method="post" action="{% if utente %}{{ url_for('modifica_utente', utente_id=utente.id) }}{% else %}{{ url_for('nuovo_utente') }}{% endif %}">
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label for="nome" class="form-label">Nome</label>
+                        <input type="text" class="form-control" id="nome" name="nome" value="{{ utente.nome if utente else '' }}" required>
+                    </div>
+                    
+                    <div class="col-md-6 mb-3">
+                        <label for="cognome" class="form-label">Cognome</label>
+                        <input type="text" class="form-control" id="cognome" name="cognome" value="{{ utente.cognome if utente else '' }}" required>
+                    </div>
+                </div>
+                
+                <div class="mb-3">
+                    <label for="classe" class="form-label">Classe</label>
+                    <input type="text" class="form-control" id="classe" name="classe" value="{{ utente.classe if utente else '' }}" placeholder="Es. 1A, 5B">
+                    <div class="form-text">Inserisci la classe dell'utente (es. 1A, 5B)</div>
+                </div>
+                
+                {% if utente %}
+                <div class="mb-3">
+                    <label for="codice" class="form-label">Codice</label>
+                    <input type="text" class="form-control" id="codice" value="{{ utente.codice }}" readonly>
+                    <div class="form-text">Il codice viene generato automaticamente e non può essere modificato</div>
+                </div>
+                {% endif %}
+                
+                <div class="text-end mt-4">
+                    <a href="{{ url_for('utenti') }}" class="btn btn-secondary">
+                        <i class="bi bi-x-circle"></i> Annulla
+                    </a>
+                    <button type="submit" class="btn btn-success">
+                        <i class="bi bi-check-circle"></i> {% if utente %}Aggiorna{% else %}Salva{% endif %} Utente
+                    </button>
+                </div>
+            </form>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{% if utente and not modifica %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Genera il codice a barre EAN-13
+    JsBarcode("#barcode", "{{ utente.codice }}", {
+        format: "EAN13",
+        lineColor: "#0D6EFD",
+        width: 2,
+        height: 100,
+        displayValue: true,
+        fontSize: 16,
+        textMargin: 5,
+        background: "transparent"
+    });
+});
+</script>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,320 @@
+{% extends 'base.html' %}
+
+{% block title %}
+{% if libro %}
+    {% if modifica %}Modifica{% else %}Dettagli{% endif %} Libro - {{ libro.titolo }}
+{% else %}
+    Nuovo Libro
+{% endif %}
+{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header">
+        <h1 class="h3 mb-0">
+            {% if libro %}
+                {% if modifica %}
+                    <i class="bi bi-pencil-square"></i> Modifica Libro
+                {% else %}
+                    <i class="bi bi-journal-richtext"></i> Dettagli Libro
+                {% endif %}
+            {% else %}
+                <i class="bi bi-journal-plus"></i> Aggiungi Nuovo Libro
+            {% endif %}
+        </h1>
+    </div>
+    <div class="card-body">
+        {% if libro and not modifica %}
+            <div class="row mb-4">
+                {% if libro.immagine_url %}
+                <div class="col-md-3 text-center mb-3">
+                    <img src="{{ libro.immagine_url }}" alt="Copertina di {{ libro.titolo }}" class="img-fluid rounded">
+                </div>
+                <div class="col-md-9">
+                {% else %}
+                <div class="col-12">
+                {% endif %}
+                    <h2>{{ libro.titolo }}</h2>
+                    <p class="lead">{{ libro.autore }}</p>
+                    
+                    <div class="mb-3">
+                        <strong>ISBN:</strong> {{ libro.isbn }}
+                    </div>
+                    
+                    {% if libro.editore %}
+                    <div class="mb-3">
+                        <strong>Editore:</strong> {{ libro.editore }}
+                    </div>
+                    {% endif %}
+                    
+                    {% if libro.anno_pubblicazione %}
+                    <div class="mb-3">
+                        <strong>Anno di Pubblicazione:</strong> {{ libro.anno_pubblicazione }}
+                    </div>
+                    {% endif %}
+                    
+                    <div class="mb-3">
+                        <strong>Disponibilità:</strong> 
+                        {% if libro.disponibile %}
+                            <span class="badge bg-success">Disponibile</span>
+                        {% else %}
+                            <span class="badge bg-warning">In prestito</span>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="mb-3">
+                        <strong>Data Inserimento:</strong> {{ libro.data_inserimento.strftime('%d/%m/%Y') }}
+                    </div>
+                    
+                    {% if libro.descrizione %}
+                    <div class="mt-4">
+                        <h5>Descrizione</h5>
+                        <p>{{ libro.descrizione }}</p>
+                    </div>
+                    {% endif %}
+                    
+                    <div class="mt-4">
+                        <a href="{{ url_for('modifica_libro', libro_id=libro.id) }}" class="btn btn-primary">
+                            <i class="bi bi-pencil"></i> Modifica
+                        </a>
+                        <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#deleteModal">
+                            <i class="bi bi-trash"></i> Elimina
+                        </button>
+                        <a href="{{ url_for('libri') }}" class="btn btn-secondary">
+                            <i class="bi bi-arrow-left"></i> Torna all'elenco
+                        </a>
+                    </div>
+                    
+                    <!-- Modal per conferma eliminazione -->
+                    <div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
+                        <div class="modal-dialog">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h5 class="modal-title" id="deleteModalLabel">Conferma Eliminazione</h5>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                </div>
+                                <div class="modal-body">
+                                    Sei sicuro di voler eliminare il libro <strong>{{ libro.titolo }}</strong>?<br>
+                                    Questa azione non può essere annullata.
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annulla</button>
+                                    <form action="{{ url_for('elimina_libro', libro_id=libro.id) }}" method="post">
+                                        <button type="submit" class="btn btn-danger">Elimina</button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            {% if prestiti %}
+            <div class="mt-4">
+                <h4>Storico Prestiti</h4>
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Utente</th>
+                                <th>Data Prestito</th>
+                                <th>Data Restituzione Prevista</th>
+                                <th>Data Restituzione Effettiva</th>
+                                <th>Stato</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for prestito in prestiti %}
+                            <tr>
+                                <td>
+                                    <a href="{{ url_for('visualizza_utente', utente_id=prestito.utente.id) }}">
+                                        {{ prestito.utente.nome_completo }}
+                                    </a>
+                                </td>
+                                <td>{{ prestito.data_prestito.strftime('%d/%m/%Y') }}</td>
+                                <td>{{ prestito.data_restituzione_prevista.strftime('%d/%m/%Y') }}</td>
+                                <td>
+                                    {% if prestito.data_restituzione_effettiva %}
+                                        {{ prestito.data_restituzione_effettiva.strftime('%d/%m/%Y') }}
+                                    {% else %}
+                                        -
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if prestito.in_corso %}
+                                        {% if prestito.in_ritardo %}
+                                            <span class="badge bg-danger">In ritardo</span>
+                                        {% else %}
+                                            <span class="badge bg-primary">In corso</span>
+                                        {% endif %}
+                                    {% else %}
+                                        <span class="badge bg-success">Restituito</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            {% endif %}
+            
+        {% else %}
+            <!-- Form per aggiungere o modificare un libro -->
+            <form method="post" action="{% if libro %}{{ url_for('modifica_libro', libro_id=libro.id) }}{% else %}{{ url_for('nuovo_libro') }}{% endif %}">
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label for="isbn" class="form-label">ISBN</label>
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="bi bi-upc"></i></span>
+                            <input type="text" class="form-control" id="isbn" name="isbn" value="{{ libro.isbn if libro else '' }}" required {% if libro %}readonly{% endif %}>
+                            {% if not libro %}
+                            <button type="button" id="cerca-isbn" class="btn btn-primary">Cerca</button>
+                            {% endif %}
+                        </div>
+                        <div class="form-text">Inserisci il codice ISBN del libro (10 o 13 cifre)</div>
+                    </div>
+                    
+                    <div class="col-md-6 mb-3">
+                        <label for="titolo" class="form-label">Titolo</label>
+                        <input type="text" class="form-control" id="titolo" name="titolo" value="{{ libro.titolo if libro else '' }}" required>
+                    </div>
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label for="autore" class="form-label">Autore</label>
+                        <input type="text" class="form-control" id="autore" name="autore" value="{{ libro.autore if libro else '' }}" required>
+                    </div>
+                    
+                    <div class="col-md-6 mb-3">
+                        <label for="editore" class="form-label">Editore</label>
+                        <input type="text" class="form-control" id="editore" name="editore" value="{{ libro.editore if libro else '' }}">
+                    </div>
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label for="anno_pubblicazione" class="form-label">Anno di Pubblicazione</label>
+                        <input type="text" class="form-control" id="anno_pubblicazione" name="anno_pubblicazione" value="{{ libro.anno_pubblicazione if libro else '' }}">
+                    </div>
+                    
+                    <div class="col-md-6 mb-3">
+                        <label for="immagine_url" class="form-label">URL Immagine Copertina</label>
+                        <input type="url" class="form-control" id="immagine_url" name="immagine_url" value="{{ libro.immagine_url if libro else '' }}">
+                        <div class="form-text">Inserisci l'URL dell'immagine della copertina (opzionale)</div>
+                    </div>
+                </div>
+                
+                <div class="mb-3">
+                    <label for="descrizione" class="form-label">Descrizione</label>
+                    <textarea class="form-control" id="descrizione" name="descrizione" rows="4">{{ libro.descrizione if libro else '' }}</textarea>
+                </div>
+                
+                <div id="anteprima-copertina" class="text-center mb-3" style="display: none;">
+                    <h5>Anteprima Copertina</h5>
+                    <img id="img-copertina" src="#" alt="Anteprima copertina" class="img-fluid rounded" style="max-height: 300px;">
+                </div>
+                
+                <div class="text-end mt-4">
+                    <a href="{{ url_for('libri') }}" class="btn btn-secondary">
+                        <i class="bi bi-x-circle"></i> Annulla
+                    </a>
+                    <button type="submit" class="btn btn-success">
+                        <i class="bi bi-check-circle"></i> {% if libro %}Aggiorna{% else %}Salva{% endif %} Libro
+                    </button>
+                </div>
+            </form>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{% if not libro or modifica %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const isbnInput = document.getElementById('isbn');
+    const cercaIsbnBtn = document.getElementById('cerca-isbn');
+    const titoloInput = document.getElementById('titolo');
+    const autoreInput = document.getElementById('autore');
+    const editoreInput = document.getElementById('editore');
+    const annoInput = document.getElementById('anno_pubblicazione');
+    const descrizioneTextarea = document.getElementById('descrizione');
+    const immagineUrlInput = document.getElementById('immagine_url');
+    const anteprimaDiv = document.getElementById('anteprima-copertina');
+    const imgCopertina = document.getElementById('img-copertina');
+    
+    // Funzione per mostrare l'anteprima della copertina
+    function mostraAnteprima() {
+        const url = immagineUrlInput.value.trim();
+        if (url) {
+            imgCopertina.src = url;
+            anteprimaDiv.style.display = 'block';
+        } else {
+            anteprimaDiv.style.display = 'none';
+        }
+    }
+    
+    // Cambia l'anteprima quando cambia l'URL dell'immagine
+    immagineUrlInput.addEventListener('input', mostraAnteprima);
+    
+    // Mostra l'anteprima all'avvio se c'è già un URL
+    mostraAnteprima();
+    
+    {% if not libro %}
+    // Ricerca automatica dei dati del libro per ISBN
+    if (cercaIsbnBtn) {
+        cercaIsbnBtn.addEventListener('click', function() {
+            const isbn = isbnInput.value.trim();
+            if (!isbn) {
+                alert('Inserisci un ISBN valido');
+                return;
+            }
+            
+            // Disabilitiamo il pulsante durante la ricerca
+            cercaIsbnBtn.disabled = true;
+            cercaIsbnBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Ricerca...';
+            
+            fetch(`/api/isbn/${isbn}`)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Libro non trovato');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    // Se il libro esiste già nel database, avvisa l'utente
+                    if (data.esistente) {
+                        alert(`Questo libro è già presente nel sistema. Titolo: ${data.titolo}`);
+                        window.location.href = `/libri/${data.id}`;
+                        return;
+                    }
+                    
+                    // Altrimenti, compila il form con i dati trovati
+                    titoloInput.value = data.titolo || '';
+                    autoreInput.value = data.autore || '';
+                    editoreInput.value = data.editore || '';
+                    annoInput.value = data.anno_pubblicazione || '';
+                    descrizioneTextarea.value = data.descrizione || '';
+                    immagineUrlInput.value = data.immagine_url || '';
+                    
+                    // Aggiorna l'anteprima della copertina
+                    mostraAnteprima();
+                })
+                .catch(error => {
+                    console.error('Errore:', error);
+                    alert('Impossibile trovare informazioni per questo ISBN. Compila i campi manualmente.');
+                })
+                .finally(() => {
+                    // Riabilitiamo il pulsante
+                    cercaIsbnBtn.disabled = false;
+                    cercaIsbnBtn.innerHTML = 'Cerca';
+                });
+        });
+    }
+    {% endif %}
+});
+</script>
+{% endif %}
+{% endblock %}

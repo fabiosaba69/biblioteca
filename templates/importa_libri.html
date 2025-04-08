@@ -1,0 +1,87 @@
+{% extends 'base.html' %}
+
+{% block title %}Importa Libri - Sistema Biblioteca{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header">
+        <h1 class="h3 mb-0"><i class="bi bi-upload"></i> Importa Libri</h1>
+    </div>
+    <div class="card-body">
+        <p class="lead">Importa un elenco di libri da un file CSV o TXT.</p>
+        
+        <div class="alert alert-info">
+            <h5><i class="bi bi-info-circle"></i> Informazioni sull'importazione</h5>
+            <p>Puoi importare i libri da un file CSV o TXT. Il sistema cercherà di identificare automaticamente il formato e i delimitatori.</p>
+            <ul>
+                <li>Per i file <strong>CSV</strong>: Assicurati che il file contenga almeno una colonna con gli ISBN dei libri.</li>
+                <li>Per i file <strong>TXT</strong>: Ogni riga dovrebbe contenere le informazioni di un libro, con campi separati da delimitatori come | ; , o tabulazioni.</li>
+            </ul>
+            <p>Se il file contiene solo gli ISBN, il sistema cercherà automaticamente le informazioni sui libri online.</p>
+        </div>
+        
+        <form action="{{ url_for('importa_libri') }}" method="post" enctype="multipart/form-data" class="mt-4">
+            <div class="mb-3">
+                <label for="file" class="form-label">Seleziona il file da importare</label>
+                <input type="file" class="form-control" id="file" name="file" accept=".csv, .txt" required>
+                <div class="form-text">Formati supportati: .csv, .txt</div>
+            </div>
+            
+            <div class="alert alert-warning">
+                <h5><i class="bi bi-exclamation-triangle"></i> Attenzione</h5>
+                <p>L'importazione potrebbe richiedere del tempo, soprattutto se ci sono molti libri da cercare online. Non chiudere la pagina durante l'importazione.</p>
+            </div>
+            
+            <div class="text-end mt-4">
+                <a href="{{ url_for('libri') }}" class="btn btn-secondary">
+                    <i class="bi bi-arrow-left"></i> Torna all'elenco
+                </a>
+                <button type="submit" class="btn btn-primary">
+                    <i class="bi bi-upload"></i> Importa Libri
+                </button>
+            </div>
+        </form>
+        
+        <div class="mt-5">
+            <h4>Esempio di formato CSV</h4>
+            <div class="table-responsive">
+                <table class="table table-bordered">
+                    <thead>
+                        <tr>
+                            <th>ISBN</th>
+                            <th>Titolo</th>
+                            <th>Autore</th>
+                            <th>Editore</th>
+                            <th>Anno</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>9788804668237</td>
+                            <td>Il piccolo principe</td>
+                            <td>Antoine de Saint-Exupéry</td>
+                            <td>Mondadori</td>
+                            <td>2015</td>
+                        </tr>
+                        <tr>
+                            <td>9788804674283</td>
+                            <td>La fattoria degli animali</td>
+                            <td>George Orwell</td>
+                            <td>Mondadori</td>
+                            <td>2016</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            
+            <h4 class="mt-3">Esempio di formato TXT</h4>
+            <pre class="bg-dark text-light p-3 rounded"><code>9788804668237|Il piccolo principe|Antoine de Saint-Exupéry|Mondadori|2015
+9788804674283|La fattoria degli animali|George Orwell|Mondadori|2016</code></pre>
+            
+            <h4 class="mt-3">Esempio di formato minimo (solo ISBN)</h4>
+            <pre class="bg-dark text-light p-3 rounded"><code>9788804668237
+9788804674283</code></pre>
+        </div>
+    </div>
+</div>
+{% endblock %}

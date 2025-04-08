@@ -1,0 +1,137 @@
+{% extends 'base.html' %}
+
+{% block title %}Gestione Utenti - Sistema Biblioteca{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1><i class="bi bi-people"></i> Gestione Utenti</h1>
+    <a href="{{ url_for('nuovo_utente') }}" class="btn btn-success">
+        <i class="bi bi-person-plus"></i> Aggiungi Utente
+    </a>
+</div>
+
+<div class="card mb-4">
+    <div class="card-body">
+        <form action="{{ url_for('utenti') }}" method="get" class="row g-3">
+            <div class="col-md-10">
+                <div class="input-group">
+                    <span class="input-group-text"><i class="bi bi-search"></i></span>
+                    <input type="text" class="form-control" name="search" placeholder="Cerca per nome, cognome o classe..." value="{{ search }}">
+                </div>
+            </div>
+            <div class="col-md-2">
+                <button type="submit" class="btn btn-primary w-100">Cerca</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+{% if utenti.items %}
+<div class="table-responsive">
+    <table class="table table-striped table-hover">
+        <thead class="table-dark">
+            <tr>
+                <th>Codice</th>
+                <th>Cognome</th>
+                <th>Nome</th>
+                <th>Classe</th>
+                <th>Data Registrazione</th>
+                <th>Stato</th>
+                <th>Azioni</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for utente in utenti.items %}
+            <tr>
+                <td>{{ utente.codice }}</td>
+                <td>{{ utente.cognome }}</td>
+                <td>{{ utente.nome }}</td>
+                <td>{{ utente.classe }}</td>
+                <td>{{ utente.data_registrazione.strftime('%d/%m/%Y') }}</td>
+                <td>
+                    {% if utente.attivo %}
+                    <span class="badge bg-success">Attivo</span>
+                    {% else %}
+                    <span class="badge bg-danger">Inattivo</span>
+                    {% endif %}
+                </td>
+                <td>
+                    <div class="btn-group">
+                        <a href="{{ url_for('visualizza_utente', utente_id=utente.id) }}" class="btn btn-sm btn-info">
+                            <i class="bi bi-eye"></i>
+                        </a>
+                        <a href="{{ url_for('modifica_utente', utente_id=utente.id) }}" class="btn btn-sm btn-primary">
+                            <i class="bi bi-pencil"></i>
+                        </a>
+                        <a href="{{ url_for('editor_tessera', utente_id=utente.id) }}" class="btn btn-sm btn-warning">
+                            <i class="bi bi-credit-card"></i>
+                        </a>
+                        <button type="button" class="btn btn-sm btn-danger" data-bs-toggle="modal" data-bs-target="#deleteModal{{ utente.id }}">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                    </div>
+                    
+                    <!-- Modal per conferma eliminazione -->
+                    <div class="modal fade" id="deleteModal{{ utente.id }}" tabindex="-1" aria-labelledby="deleteModalLabel{{ utente.id }}" aria-hidden="true">
+                        <div class="modal-dialog">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h5 class="modal-title" id="deleteModalLabel{{ utente.id }}">Conferma Eliminazione</h5>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                </div>
+                                <div class="modal-body">
+                                    Sei sicuro di voler eliminare l'utente <strong>{{ utente.cognome }} {{ utente.nome }}</strong>?<br>
+                                    Questa azione non può essere annullata.
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annulla</button>
+                                    <form action="{{ url_for('elimina_utente', utente_id=utente.id) }}" method="post">
+                                        <button type="submit" class="btn btn-danger">Elimina</button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<!-- Paginazione -->
+<nav aria-label="Navigazione pagine">
+    <ul class="pagination justify-content-center">
+        <li class="page-item {% if not utenti.has_prev %}disabled{% endif %}">
+            <a class="page-link" href="{% if utenti.has_prev %}{{ url_for('utenti', page=utenti.prev_num, search=search) }}{% else %}#{% endif %}" aria-label="Previous">
+                <span aria-hidden="true">&laquo;</span>
+            </a>
+        </li>
+        
+        {% for page_num in utenti.iter_pages() %}
+            {% if page_num %}
+                <li class="page-item {% if page_num == utenti.page %}active{% endif %}">
+                    <a class="page-link" href="{{ url_for('utenti', page=page_num, search=search) }}">{{ page_num }}</a>
+                </li>
+            {% else %}
+                <li class="page-item disabled">
+                    <span class="page-link">...</span>
+                </li>
+            {% endif %}
+        {% endfor %}
+        
+        <li class="page-item {% if not utenti.has_next %}disabled{% endif %}">
+            <a class="page-link" href="{% if utenti.has_next %}{{ url_for('utenti', page=utenti.next_num, search=search) }}{% else %}#{% endif %}" aria-label="Next">
+                <span aria-hidden="true">&raquo;</span>
+            </a>
+        </li>
+    </ul>
+</nav>
+
+{% else %}
+<div class="alert alert-info">
+    <i class="bi bi-info-circle"></i> Nessun utente trovato. {% if search %}Prova a modificare i criteri di ricerca.{% else %}Aggiungi un nuovo utente.{% endif %}
+</div>
+{% endif %}
+
+{% endblock %}
