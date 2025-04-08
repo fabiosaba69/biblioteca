@@ -1,0 +1,228 @@
+{% extends 'layout.html' %}
+
+{% block title %}Editor Tessere{% endblock %}
+
+{% block extra_head %}
+<style>
+    /* Stile per l'editor delle tessere */
+    #card-container {
+        width: 85.60mm;  /* Larghezza standard tessera */
+        height: 53.98mm;  /* Altezza standard tessera */
+        background-color: #fff;
+        border: 1px solid #ced4da;
+        position: relative;
+        margin: 0 auto;
+        border-radius: 3.18mm;
+        overflow: hidden;
+        color: #000;
+    }
+    
+    .card-element {
+        position: absolute;
+        cursor: move;
+        z-index: 10;
+    }
+    
+    .card-element.selected {
+        border: 2px dashed #007bff;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h1 class="page-title">
+            {% if user %}
+            <i class="fas fa-id-card me-2"></i> Tessera Utente: {{ user.nome }} {{ user.cognome }}
+            {% else %}
+            <i class="fas fa-id-card me-2"></i> Gestione Modelli Tessera
+            {% endif %}
+        </h1>
+    </div>
+</div>
+
+<div class="row" id="card-editor" {% if default_template %}data-default-template="{{ default_template.id }}"{% endif %}>
+    <div class="col-md-8 mb-4">
+        <!-- Barra degli strumenti -->
+        <div class="card mb-3">
+            <div class="card-header">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Anteprima Tessera</h5>
+                    <div>
+                        {% if templates %}
+                        <select id="template-selector" class="form-select form-select-sm d-inline-block me-1" style="width: auto;">
+                            <option value="">-- Seleziona modello --</option>
+                            {% for template in templates %}
+                            <option value="{{ template.id }}" {% if default_template and default_template.id == template.id %}selected{% endif %}>
+                                {{ template.nome }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                        {% endif %}
+                        <button id="print-card" class="btn btn-sm btn-success">
+                            <i class="fas fa-print me-1"></i> Stampa
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="element-toolbar mb-3">
+                    <button class="btn btn-sm btn-outline-primary me-1" onclick="addNewElement('text')">
+                        <i class="fas fa-font me-1"></i> Aggiungi Testo
+                    </button>
+                    <button class="btn btn-sm btn-outline-primary me-1" onclick="addNewElement('logo')">
+                        <i class="fas fa-image me-1"></i> Aggiungi Immagine
+                    </button>
+                    <button class="btn btn-sm btn-outline-primary" onclick="addNewElement('barcode')">
+                        <i class="fas fa-barcode me-1"></i> Aggiungi Barcode
+                    </button>
+                </div>
+                
+                <!-- Container della tessera -->
+                <div id="card-container">
+                    <!-- Gli elementi verranno aggiunti dinamicamente -->
+                </div>
+                
+                <!-- Dati utente (per sostituzione dinamica) -->
+                {% if user %}
+                <div id="user-data" style="display: none;" 
+                     data-id="{{ user.id }}"
+                     data-name="{{ user.nome }}"
+                     data-surname="{{ user.cognome }}"
+                     data-class="{{ user.classe }}"
+                     data-barcode="{{ user.barcode }}">
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4 mb-4">
+        <!-- Proprietà e salvataggio -->
+        <div class="card mb-3">
+            <div class="card-header">
+                <h5 class="mb-0">Proprietà Elemento</h5>
+            </div>
+            <div class="card-body">
+                <div id="properties-panel">
+                    <p class="text-center text-muted my-5">
+                        Seleziona un elemento sulla tessera per modificarne le proprietà
+                    </p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Salva Modello</h5>
+            </div>
+            <div class="card-body">
+                <form id="template-form">
+                    <input type="hidden" id="template-id" name="template_id" value="">
+                    <div class="mb-3">
+                        <label for="template-name" class="form-label">Nome Modello</label>
+                        <input type="text" class="form-control" id="template-name" name="nome" required>
+                    </div>
+                    <div class="mb-3 form-check">
+                        <input type="checkbox" class="form-check-input" id="default-template" name="predefinito">
+                        <label class="form-check-label" for="default-template">Imposta come predefinito</label>
+                    </div>
+                    <div class="d-flex justify-content-between">
+                        <button type="button" id="new-template" class="btn btn-secondary">
+                            <i class="fas fa-file me-1"></i> Nuovo
+                        </button>
+                        <button type="button" id="save-template" class="btn btn-primary">
+                            <i class="fas fa-save me-1"></i> Salva
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Se siamo in modalità gestione modelli, mostriamo la lista -->
+{% if mode == "templates" %}
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Modelli Disponibili</h5>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead>
+                            <tr>
+                                <th>Nome</th>
+                                <th>Predefinito</th>
+                                <th>Data Creazione</th>
+                                <th>Azioni</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for template in templates %}
+                            <tr>
+                                <td>{{ template.nome }}</td>
+                                <td>
+                                    {% if template.predefinito %}
+                                    <span class="badge bg-success">Sì</span>
+                                    {% else %}
+                                    <span class="badge bg-secondary">No</span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ template.data_creazione.strftime('%d/%m/%Y %H:%M') }}</td>
+                                <td>
+                                    <button class="btn btn-sm btn-primary" onclick="loadTemplate('{{ template.id }}')">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                    <button class="btn btn-sm btn-danger" data-bs-toggle="modal" data-bs-target="#deleteTemplateModal{{ template.id }}">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                    
+                                    <!-- Modal Conferma Eliminazione -->
+                                    <div class="modal fade" id="deleteTemplateModal{{ template.id }}" tabindex="-1" aria-hidden="true">
+                                        <div class="modal-dialog">
+                                            <div class="modal-content">
+                                                <div class="modal-header">
+                                                    <h5 class="modal-title">Conferma Eliminazione</h5>
+                                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                                </div>
+                                                <div class="modal-body">
+                                                    <p>Sei sicuro di voler eliminare il modello <strong>"{{ template.nome }}"</strong>?</p>
+                                                    <p class="text-danger">Questa azione non può essere annullata.</p>
+                                                </div>
+                                                <div class="modal-footer">
+                                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annulla</button>
+                                                    <form action="{{ url_for('delete_template', id=template.id) }}" method="post">
+                                                        <button type="submit" class="btn btn-danger">Elimina Modello</button>
+                                                    </form>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="4" class="text-center py-3">
+                                    Nessun modello di tessera presente. Creane uno nuovo!
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+{% endblock %}
+
+{% block scripts %}
+<!-- Script per l'editor di tessere -->
+<script src="{{ url_for('static', filename='js/card_editor.js') }}"></script>
+{% endblock %}

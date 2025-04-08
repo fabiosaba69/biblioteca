@@ -1,0 +1,365 @@
+{% extends 'layout.html' %}
+
+{% block title %}Gestione Utenti{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h1 class="page-title">
+            <i class="fas fa-users me-2"></i> Gestione Utenti
+        </h1>
+    </div>
+</div>
+
+{% if form_mode == "add" %}
+<!-- Modulo Aggiungi Utente -->
+<div class="row">
+    <div class="col-12">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-user-plus me-2"></i> Aggiungi Nuovo Utente</h5>
+            </div>
+            <div class="card-body">
+                <form action="{{ url_for('add_user') }}" method="post">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="nome" class="form-label">Nome</label>
+                                <input type="text" class="form-control" id="nome" name="nome" required>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="cognome" class="form-label">Cognome</label>
+                                <input type="text" class="form-control" id="cognome" name="cognome" required>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="classe" class="form-label">Classe</label>
+                                <input type="text" class="form-control" id="classe" name="classe" placeholder="es. 3A">
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="email" class="form-label">Email</label>
+                                <input type="email" class="form-control" id="email" name="email">
+                                <div class="form-text">Opzionale - per notifiche e comunicazioni</div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label class="form-label">Codice a Barre</label>
+                                <p class="form-text mb-2">Un codice EAN-13 univoco verrà generato automaticamente al salvataggio</p>
+                                <div class="d-flex justify-content-center border rounded p-3 mb-3">
+                                    <svg id="barcode-preview"></svg>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="d-flex justify-content-between mt-3">
+                        <a href="{{ url_for('users') }}" class="btn btn-secondary">
+                            <i class="fas fa-arrow-left me-2"></i> Annulla
+                        </a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save me-2"></i> Salva Utente
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% elif form_mode == "edit" %}
+<!-- Modulo Modifica Utente -->
+<div class="row">
+    <div class="col-12">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-user-edit me-2"></i> Modifica Utente</h5>
+            </div>
+            <div class="card-body">
+                <form action="{{ url_for('edit_user', id=user.id) }}" method="post">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="nome" class="form-label">Nome</label>
+                                <input type="text" class="form-control" id="nome" name="nome" value="{{ user.nome }}" required>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="cognome" class="form-label">Cognome</label>
+                                <input type="text" class="form-control" id="cognome" name="cognome" value="{{ user.cognome }}" required>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="classe" class="form-label">Classe</label>
+                                <input type="text" class="form-control" id="classe" name="classe" value="{{ user.classe }}" placeholder="es. 3A">
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="email" class="form-label">Email</label>
+                                <input type="email" class="form-control" id="email" name="email" value="{{ user.email }}">
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label class="form-label">Codice a Barre</label>
+                                <div class="input-group mb-2">
+                                    <input type="text" class="form-control" value="{{ user.barcode }}" readonly>
+                                    <div class="form-check form-switch ps-3 d-flex align-items-center">
+                                        <input class="form-check-input" type="checkbox" id="generate_new_barcode" name="generate_new_barcode">
+                                        <label class="form-check-label ms-2" for="generate_new_barcode">Genera nuovo</label>
+                                    </div>
+                                </div>
+                                <div class="d-flex justify-content-center border rounded p-3 mb-3">
+                                    <svg id="barcode-display"></svg>
+                                </div>
+                                <div class="text-center">
+                                    <a href="{{ url_for('user_card', id=user.id) }}" class="btn btn-sm btn-outline-primary">
+                                        <i class="fas fa-id-card me-2"></i> Crea Tessera
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="d-flex justify-content-between mt-3">
+                        <div>
+                            <a href="{{ url_for('users') }}" class="btn btn-secondary me-2">
+                                <i class="fas fa-arrow-left me-2"></i> Annulla
+                            </a>
+                            <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#deleteUserModal">
+                                <i class="fas fa-trash me-2"></i> Elimina
+                            </button>
+                        </div>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save me-2"></i> Salva Modifiche
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        
+        <!-- Prestiti dell'utente -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-book-reader me-2"></i> Prestiti dell'utente</h5>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead>
+                            <tr>
+                                <th>Libro</th>
+                                <th>Data Prestito</th>
+                                <th>Scadenza</th>
+                                <th>Stato</th>
+                                <th>Azioni</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for loan in user.prestiti %}
+                            <tr>
+                                <td>{{ loan.libro.titolo }}</td>
+                                <td>{{ loan.data_prestito.strftime('%d/%m/%Y') }}</td>
+                                <td>{{ loan.data_restituzione_prevista.strftime('%d/%m/%Y') if loan.data_restituzione_prevista else '-' }}</td>
+                                <td>
+                                    {% if loan.data_restituzione_effettiva %}
+                                    <span class="badge bg-secondary">Restituito il {{ loan.data_restituzione_effettiva.strftime('%d/%m/%Y') }}</span>
+                                    {% elif loan.data_restituzione_prevista and loan.data_restituzione_prevista < now() %}
+                                    <span class="badge bg-danger">In ritardo</span>
+                                    {% else %}
+                                    <span class="badge bg-success">Attivo</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if not loan.data_restituzione_effettiva %}
+                                    <form action="{{ url_for('return_loan', id=loan.id) }}" method="post" class="d-inline">
+                                        <button type="submit" class="btn btn-sm btn-success">
+                                            <i class="fas fa-undo"></i> Restituzione
+                                        </button>
+                                    </form>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="5" class="text-center py-3">Nessun prestito registrato per questo utente</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Modal Conferma Eliminazione -->
+        <div class="modal fade" id="deleteUserModal" tabindex="-1" aria-labelledby="deleteUserModalLabel" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="deleteUserModalLabel">Conferma Eliminazione</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <p>Sei sicuro di voler eliminare l'utente <strong>"{{ user.nome }} {{ user.cognome }}"</strong>?</p>
+                        <p class="text-danger">Questa azione non può essere annullata.</p>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annulla</button>
+                        <form action="{{ url_for('delete_user', id=user.id) }}" method="post">
+                            <button type="submit" class="btn btn-danger">Elimina Utente</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% else %}
+<!-- Elenco Utenti -->
+<div class="row mb-4">
+    <div class="col-md-8">
+        <div class="search-box">
+            <form action="{{ url_for('users') }}" method="get">
+                <div class="input-group">
+                    <span class="input-group-text"><i class="fas fa-search"></i></span>
+                    <input type="text" class="form-control" placeholder="Cerca per nome, cognome o classe..." name="q" value="{{ search_term }}">
+                    <button class="btn btn-primary" type="submit">Cerca</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    <div class="col-md-4 text-md-end">
+        <a href="{{ url_for('add_user') }}" class="btn btn-success">
+            <i class="fas fa-user-plus me-2"></i> Nuovo Utente
+        </a>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-users me-2"></i> Elenco Utenti</h5>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover table-striped mb-0">
+                        <thead>
+                            <tr>
+                                <th>Nome</th>
+                                <th>Cognome</th>
+                                <th>Classe</th>
+                                <th>Codice</th>
+                                <th>Prestiti Attivi</th>
+                                <th>Azioni</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for user in users.items %}
+                            <tr>
+                                <td>{{ user.nome }}</td>
+                                <td>{{ user.cognome }}</td>
+                                <td>{{ user.classe }}</td>
+                                <td>{{ user.barcode }}</td>
+                                <td>
+                                    {% set active_loans = user.prestiti|selectattr('data_restituzione_effettiva', 'none')|list|length %}
+                                    {% if active_loans > 0 %}
+                                    <span class="badge bg-primary">{{ active_loans }}</span>
+                                    {% else %}
+                                    <span class="badge bg-secondary">0</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <div class="btn-group" role="group">
+                                        <a href="{{ url_for('edit_user', id=user.id) }}" class="btn btn-sm btn-primary">
+                                            <i class="fas fa-edit"></i>
+                                        </a>
+                                        <a href="{{ url_for('user_card', id=user.id) }}" class="btn btn-sm btn-info">
+                                            <i class="fas fa-id-card"></i>
+                                        </a>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="6" class="text-center py-4">
+                                    {% if search_term %}
+                                    <p>Nessun utente trovato con "{{ search_term }}"</p>
+                                    {% else %}
+                                    <p>Nessun utente presente nel database</p>
+                                    {% endif %}
+                                    <a href="{{ url_for('add_user') }}" class="btn btn-sm btn-primary">
+                                        <i class="fas fa-user-plus me-2"></i> Aggiungi Utente
+                                    </a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            {% if users.pages > 1 %}
+            <div class="card-footer">
+                <nav aria-label="Navigazione pagine">
+                    <ul class="pagination justify-content-center mb-0">
+                        <li class="page-item {% if users.page == 1 %}disabled{% endif %}">
+                            <a class="page-link" href="{{ url_for('users', page=users.prev_num, q=search_term) }}" aria-label="Precedente">
+                                <span aria-hidden="true">&laquo;</span>
+                            </a>
+                        </li>
+                        
+                        {% for page_num in users.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}
+                            {% if page_num %}
+                                <li class="page-item {% if page_num == users.page %}active{% endif %}">
+                                    <a class="page-link" href="{{ url_for('users', page=page_num, q=search_term) }}">{{ page_num }}</a>
+                                </li>
+                            {% else %}
+                                <li class="page-item disabled">
+                                    <span class="page-link">...</span>
+                                </li>
+                            {% endif %}
+                        {% endfor %}
+                        
+                        <li class="page-item {% if users.page == users.pages %}disabled{% endif %}">
+                            <a class="page-link" href="{{ url_for('users', page=users.next_num, q=search_term) }}" aria-label="Successivo">
+                                <span aria-hidden="true">&raquo;</span>
+                            </a>
+                        </li>
+                    </ul>
+                </nav>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endif %}
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Funzione per formattare la data corrente
+        function now() {
+            return new Date();
+        }
+        
+        // Genera codice a barre per l'anteprima o visualizzazione
+        {% if form_mode == "edit" %}
+        JsBarcode("#barcode-display", "{{ user.barcode }}", {
+            format: "EAN13",
+            lineColor: "#000",
+            width: 2,
+            height: 60,
+            displayValue: true,
+            fontSize: 12
+        });
+        {% endif %}
+    });
+</script>
+{% endblock %}

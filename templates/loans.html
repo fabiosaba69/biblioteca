@@ -1,0 +1,288 @@
+{% extends 'layout.html' %}
+
+{% block title %}Gestione Prestiti{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h1 class="page-title">
+            <i class="fas fa-exchange-alt me-2"></i> Gestione Prestiti
+        </h1>
+    </div>
+</div>
+
+{% if form_mode == "add" %}
+<!-- Modulo Aggiungi Prestito -->
+<div class="row">
+    <div class="col-12">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-plus-circle me-2"></i> Nuovo Prestito</h5>
+            </div>
+            <div class="card-body">
+                <form action="{{ url_for('add_loan') }}" method="post">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h5 class="mb-3">Seleziona Utente</h5>
+                            
+                            <div class="mb-3">
+                                <div class="input-group">
+                                    <span class="input-group-text">
+                                        <i class="fas fa-user"></i>
+                                    </span>
+                                    <input type="text" class="form-control" id="user-search" placeholder="Cerca utente per nome o classe...">
+                                    <button class="btn btn-outline-primary btn-scan" type="button" id="scan-user" title="Scansiona tessera">
+                                        <i class="fas fa-barcode"></i>
+                                    </button>
+                                </div>
+                                <div class="search-results" id="user-results"></div>
+                                <input type="hidden" id="utente_id" name="utente_id" required>
+                                <div id="selected-user-info" style="display: none;"></div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="giorni_prestito" class="form-label">Durata Prestito (giorni)</label>
+                                <input type="number" class="form-control" id="giorni_prestito" name="giorni_prestito" value="30" min="1" max="180">
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="nota" class="form-label">Note</label>
+                                <textarea class="form-control" id="nota" name="nota" rows="3"></textarea>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <h5 class="mb-3">Seleziona Libro</h5>
+                            
+                            <div class="mb-3">
+                                <div class="input-group">
+                                    <span class="input-group-text">
+                                        <i class="fas fa-book"></i>
+                                    </span>
+                                    <input type="text" class="form-control" id="book-search" placeholder="Cerca libro per titolo o ISBN...">
+                                    <button class="btn btn-outline-primary btn-scan" type="button" id="scan-book" title="Scansiona libro">
+                                        <i class="fas fa-barcode"></i>
+                                    </button>
+                                </div>
+                                <div class="search-results" id="book-results"></div>
+                                <input type="hidden" id="libro_id" name="libro_id" required>
+                                <div id="selected-book-info" style="display: none;"></div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="barcode-input" class="form-label">Scansione Rapida</label>
+                                <div class="input-group">
+                                    <span class="input-group-text">
+                                        <i class="fas fa-barcode"></i>
+                                    </span>
+                                    <input type="text" class="form-control" id="barcode-input" placeholder="Scansiona codice a barre...">
+                                    <button class="btn btn-outline-primary" type="button" id="process-barcode">
+                                        <i class="fas fa-arrow-right"></i>
+                                    </button>
+                                </div>
+                                <div class="form-text">
+                                    Scansiona il codice dell'utente o del libro per selezionarlo automaticamente
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="d-flex justify-content-between mt-3">
+                        <a href="{{ url_for('loans') }}" class="btn btn-secondary">
+                            <i class="fas fa-arrow-left me-2"></i> Annulla
+                        </a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save me-2"></i> Registra Prestito
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Liste nascoste per ricerca rapida (verrebbero normalmente popolate via API) -->
+<datalist id="user-list">
+    {% for user in users %}
+    <option value="{{ user.id }}">{{ user.nome }} {{ user.cognome }} - {{ user.classe }}</option>
+    {% endfor %}
+</datalist>
+
+<datalist id="book-list">
+    {% for book in available_books %}
+    <option value="{{ book.id }}">{{ book.titolo }} - {{ book.autore }}</option>
+    {% endfor %}
+</datalist>
+
+{% else %}
+<!-- Elenco Prestiti -->
+<div class="row mb-4">
+    <div class="col-md-8">
+        <div class="search-box">
+            <form action="{{ url_for('loans') }}" method="get">
+                <div class="input-group">
+                    <span class="input-group-text"><i class="fas fa-search"></i></span>
+                    <input type="text" class="form-control" placeholder="Cerca prestito..." name="q" value="{{ search_term }}">
+                    <select class="form-select" name="status" style="max-width: 150px;">
+                        <option value="all" {% if status == 'all' %}selected{% endif %}>Tutti</option>
+                        <option value="active" {% if status == 'active' %}selected{% endif %}>Attivi</option>
+                        <option value="overdue" {% if status == 'overdue' %}selected{% endif %}>Scaduti</option>
+                        <option value="returned" {% if status == 'returned' %}selected{% endif %}>Restituiti</option>
+                    </select>
+                    <button class="btn btn-primary" type="submit">Cerca</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    <div class="col-md-4 text-md-end">
+        <a href="{{ url_for('add_loan') }}" class="btn btn-success">
+            <i class="fas fa-plus-circle me-2"></i> Nuovo Prestito
+        </a>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-exchange-alt me-2"></i> Elenco Prestiti</h5>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover table-striped mb-0">
+                        <thead>
+                            <tr>
+                                <th>Utente</th>
+                                <th>Libro</th>
+                                <th>Data Prestito</th>
+                                <th>Data Restituzione</th>
+                                <th>Stato</th>
+                                <th>Azioni</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for loan in loans.items %}
+                            <tr>
+                                <td>{{ loan.utente.nome }} {{ loan.utente.cognome }}</td>
+                                <td>{{ loan.libro.titolo }}</td>
+                                <td>{{ loan.data_prestito.strftime('%d/%m/%Y') }}</td>
+                                <td>
+                                    {% if loan.data_restituzione_effettiva %}
+                                    <span class="text-success">{{ loan.data_restituzione_effettiva.strftime('%d/%m/%Y') }}</span>
+                                    {% else %}
+                                    <span class="{% if loan.data_restituzione_prevista < current_time %}text-danger{% endif %}">
+                                        Entro: {{ loan.data_restituzione_prevista.strftime('%d/%m/%Y') }}
+                                    </span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if loan.data_restituzione_effettiva %}
+                                    <span class="badge bg-success">Restituito</span>
+                                    {% elif loan.data_restituzione_prevista < current_time %}
+                                    <span class="badge bg-danger">Scaduto</span>
+                                    {% else %}
+                                    <span class="badge bg-primary">Attivo</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if not loan.data_restituzione_effettiva %}
+                                    <form action="{{ url_for('return_loan', id=loan.id) }}" method="post" class="d-inline">
+                                        <button type="submit" class="btn btn-sm btn-success">
+                                            <i class="fas fa-undo"></i> Restituzione
+                                        </button>
+                                    </form>
+                                    {% endif %}
+                                    <button type="button" class="btn btn-sm btn-danger" data-bs-toggle="modal" data-bs-target="#deleteLoanModal{{ loan.id }}">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                    
+                                    <!-- Modal Conferma Eliminazione -->
+                                    <div class="modal fade" id="deleteLoanModal{{ loan.id }}" tabindex="-1" aria-hidden="true">
+                                        <div class="modal-dialog">
+                                            <div class="modal-content">
+                                                <div class="modal-header">
+                                                    <h5 class="modal-title">Conferma Eliminazione</h5>
+                                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                                </div>
+                                                <div class="modal-body">
+                                                    <p>Sei sicuro di voler eliminare questo prestito?</p>
+                                                    <p><strong>Utente:</strong> {{ loan.utente.nome }} {{ loan.utente.cognome }}</p>
+                                                    <p><strong>Libro:</strong> {{ loan.libro.titolo }}</p>
+                                                    <p class="text-danger">Questa azione non può essere annullata.</p>
+                                                </div>
+                                                <div class="modal-footer">
+                                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annulla</button>
+                                                    <form action="{{ url_for('delete_loan', id=loan.id) }}" method="post">
+                                                        <button type="submit" class="btn btn-danger">Elimina Prestito</button>
+                                                    </form>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="6" class="text-center py-4">
+                                    {% if search_term %}
+                                    <p>Nessun prestito trovato con "{{ search_term }}"</p>
+                                    {% else %}
+                                    <p>Nessun prestito presente nel database</p>
+                                    {% endif %}
+                                    <a href="{{ url_for('add_loan') }}" class="btn btn-sm btn-primary">
+                                        <i class="fas fa-plus-circle me-2"></i> Aggiungi Prestito
+                                    </a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            {% if loans.pages > 1 %}
+            <div class="card-footer">
+                <nav aria-label="Navigazione pagine">
+                    <ul class="pagination justify-content-center mb-0">
+                        <li class="page-item {% if loans.page == 1 %}disabled{% endif %}">
+                            <a class="page-link" href="{{ url_for('loans', page=loans.prev_num, q=search_term, status=status) }}" aria-label="Precedente">
+                                <span aria-hidden="true">&laquo;</span>
+                            </a>
+                        </li>
+                        
+                        {% for page_num in loans.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}
+                            {% if page_num %}
+                                <li class="page-item {% if page_num == loans.page %}active{% endif %}">
+                                    <a class="page-link" href="{{ url_for('loans', page=page_num, q=search_term, status=status) }}">{{ page_num }}</a>
+                                </li>
+                            {% else %}
+                                <li class="page-item disabled">
+                                    <span class="page-link">...</span>
+                                </li>
+                            {% endif %}
+                        {% endfor %}
+                        
+                        <li class="page-item {% if loans.page == loans.pages %}disabled{% endif %}">
+                            <a class="page-link" href="{{ url_for('loans', page=loans.next_num, q=search_term, status=status) }}" aria-label="Successivo">
+                                <span aria-hidden="true">&raquo;</span>
+                            </a>
+                        </li>
+                    </ul>
+                </nav>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endif %}
+
+{% endblock %}
+
+{% block scripts %}
+<!-- Script per la gestione dei prestiti -->
+<script src="{{ url_for('static', filename='js/loan.js') }}"></script>
+<script>
+    function now() {
+        return new Date();
+    }
+</script>
+{% endblock %}

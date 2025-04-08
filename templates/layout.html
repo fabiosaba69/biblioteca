@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="it" data-bs-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Sistema di Gestione Biblioteca{% endblock %} - Scuola Primaria</title>
+    
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="https://cdn.replit.com/agent/bootstrap-agent-dark-theme.min.css">
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    
+    <!-- JsBarcode -->
+    <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
+    
+    <!-- Interact.js (per drag-and-drop) -->
+    <script src="https://cdn.jsdelivr.net/npm/interactjs/dist/interact.min.js"></script>
+    
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    {% block extra_head %}{% endblock %}
+</head>
+<body>
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark mb-4">
+        <div class="container">
+            <a class="navbar-brand" href="{{ url_for('index') }}">
+                <img src="{{ url_for('static', filename='img/default_logo.svg') }}" alt="Logo" width="30" height="30" class="d-inline-block align-text-top">
+                Biblioteca Scolastica
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarMain" aria-controls="navbarMain" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarMain">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.path == '/' %}active{% endif %}" href="{{ url_for('index') }}">
+                            <i class="fas fa-home"></i> Home
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if '/libri' in request.path %}active{% endif %}" href="{{ url_for('books') }}">
+                            <i class="fas fa-book"></i> Libri
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if '/utenti' in request.path %}active{% endif %}" href="{{ url_for('users') }}">
+                            <i class="fas fa-users"></i> Utenti
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if '/prestiti' in request.path %}active{% endif %}" href="{{ url_for('loans') }}">
+                            <i class="fas fa-exchange-alt"></i> Prestiti
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if '/importa' in request.path %}active{% endif %}" href="{{ url_for('import_books') }}">
+                            <i class="fas fa-file-import"></i> Importa
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if '/statistiche' in request.path %}active{% endif %}" href="{{ url_for('statistics') }}">
+                            <i class="fas fa-chart-bar"></i> Statistiche
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Alert container per i messaggi flash -->
+    <div class="container mb-4">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Chiudi"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+    </div>
+
+    <!-- Contenuto principale -->
+    <main class="container">
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer mt-5 py-3 bg-dark">
+        <div class="container">
+            <div class="row">
+                <div class="col-md-6">
+                    <p class="mb-0 text-muted">
+                        &copy; {{ current_year }} Sistema di Gestione Biblioteca - Fabio SABATELLI
+                    </p>
+                </div>
+                <div class="col-md-6 text-md-end">
+                    <p class="mb-0 text-muted">
+                        Versione 1.0
+                    </p>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- Script personalizzati -->
+    {% block scripts %}{% endblock %}
+</body>
+</html>

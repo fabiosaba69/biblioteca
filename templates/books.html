@@ -1,0 +1,393 @@
+{% extends 'layout.html' %}
+
+{% block title %}Gestione Libri{% endblock %}
+
+{% block extra_head %}
+<!-- CSS personalizzato per la pagina di gestione libri -->
+<style>
+    .book-cover-container {
+        height: 150px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    .book-cover-preview {
+        max-height: 140px;
+        max-width: 100%;
+        border-radius: 4px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h1 class="page-title">
+            <i class="fas fa-book me-2"></i> Gestione Libri
+        </h1>
+    </div>
+</div>
+
+{% if form_mode == "add" %}
+<!-- Modulo Aggiungi Libro -->
+<div class="row">
+    <div class="col-12">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-plus-circle me-2"></i> Aggiungi Nuovo Libro</h5>
+            </div>
+            <div class="card-body">
+                <form action="{{ url_for('add_book') }}" method="post" id="book-form">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="isbn" class="form-label">ISBN</label>
+                                <div class="input-group">
+                                    <input type="text" class="form-control" id="isbn" name="isbn" required>
+                                    <button class="btn btn-primary" type="button" id="search-isbn">
+                                        <i class="fas fa-search"></i> Cerca
+                                    </button>
+                                </div>
+                                <div class="form-text">Inserisci l'ISBN a 10 o 13 cifre</div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="titolo" class="form-label">Titolo</label>
+                                <input type="text" class="form-control" id="titolo" name="titolo" required>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="autore" class="form-label">Autore</label>
+                                <input type="text" class="form-control" id="autore" name="autore">
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="editore" class="form-label">Editore</label>
+                                <input type="text" class="form-control" id="editore" name="editore">
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="anno_pubblicazione" class="form-label">Anno di Pubblicazione</label>
+                                <input type="text" class="form-control" id="anno_pubblicazione" name="anno_pubblicazione">
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="genere" class="form-label">Genere</label>
+                                <input type="text" class="form-control" id="genere" name="genere">
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="descrizione" class="form-label">Descrizione</label>
+                                <textarea class="form-control" id="descrizione" name="descrizione" rows="4"></textarea>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="immagine_url" class="form-label">URL Immagine Copertina</label>
+                                <input type="text" class="form-control" id="immagine_url" name="immagine_url">
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label class="form-label">Immagine Copertina</label>
+                                <div class="book-cover-container border rounded p-2 mb-2">
+                                    <img src="{{ url_for('static', filename='img/default_cover.svg') }}" id="cover-preview" class="book-cover-preview" style="display: none;">
+                                </div>
+                                <input type="file" class="form-control" id="cover-upload" accept="image/*">
+                                <input type="hidden" id="image_data" name="image_data">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="d-flex justify-content-between mt-3">
+                        <a href="{{ url_for('books') }}" class="btn btn-secondary">
+                            <i class="fas fa-arrow-left me-2"></i> Annulla
+                        </a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save me-2"></i> Salva Libro
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% elif form_mode == "edit" %}
+<!-- Modulo Modifica Libro -->
+<div class="row">
+    <div class="col-12">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-edit me-2"></i> Modifica Libro</h5>
+            </div>
+            <div class="card-body">
+                <form action="{{ url_for('edit_book', id=book.id) }}" method="post" id="book-form">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="isbn" class="form-label">ISBN</label>
+                                <div class="input-group">
+                                    <input type="text" class="form-control" id="isbn" name="isbn" value="{{ book.isbn }}" required>
+                                    <button class="btn btn-primary" type="button" id="search-isbn">
+                                        <i class="fas fa-search"></i> Cerca
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="titolo" class="form-label">Titolo</label>
+                                <input type="text" class="form-control" id="titolo" name="titolo" value="{{ book.titolo }}" required>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="autore" class="form-label">Autore</label>
+                                <input type="text" class="form-control" id="autore" name="autore" value="{{ book.autore }}">
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="editore" class="form-label">Editore</label>
+                                <input type="text" class="form-control" id="editore" name="editore" value="{{ book.editore }}">
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="anno_pubblicazione" class="form-label">Anno di Pubblicazione</label>
+                                <input type="text" class="form-control" id="anno_pubblicazione" name="anno_pubblicazione" value="{{ book.anno_pubblicazione }}">
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="genere" class="form-label">Genere</label>
+                                <input type="text" class="form-control" id="genere" name="genere" value="{{ book.genere }}">
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="descrizione" class="form-label">Descrizione</label>
+                                <textarea class="form-control" id="descrizione" name="descrizione" rows="4">{{ book.descrizione }}</textarea>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="immagine_url" class="form-label">URL Immagine Copertina</label>
+                                <input type="text" class="form-control" id="immagine_url" name="immagine_url" value="{{ book.immagine_url }}">
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label class="form-label">Immagine Copertina</label>
+                                <div class="book-cover-container border rounded p-2 mb-2">
+                                    {% if book.immagine_url %}
+                                    <img src="{{ book.immagine_url }}" id="cover-preview" class="book-cover-preview">
+                                    {% else %}
+                                    <img src="{{ url_for('static', filename='img/default_cover.svg') }}" id="cover-preview" class="book-cover-preview">
+                                    {% endif %}
+                                </div>
+                                <input type="file" class="form-control" id="cover-upload" accept="image/*">
+                                <input type="hidden" id="image_data" name="image_data">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="d-flex justify-content-between mt-3">
+                        <div>
+                            <a href="{{ url_for('books') }}" class="btn btn-secondary me-2">
+                                <i class="fas fa-arrow-left me-2"></i> Annulla
+                            </a>
+                            <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#deleteBookModal">
+                                <i class="fas fa-trash me-2"></i> Elimina
+                            </button>
+                        </div>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save me-2"></i> Salva Modifiche
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        
+        <!-- Modal Conferma Eliminazione -->
+        <div class="modal fade" id="deleteBookModal" tabindex="-1" aria-labelledby="deleteBookModalLabel" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="deleteBookModalLabel">Conferma Eliminazione</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <p>Sei sicuro di voler eliminare il libro <strong>"{{ book.titolo }}"</strong>?</p>
+                        <p class="text-danger">Questa azione non può essere annullata.</p>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annulla</button>
+                        <form action="{{ url_for('delete_book', id=book.id) }}" method="post">
+                            <button type="submit" class="btn btn-danger">Elimina Libro</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% else %}
+<!-- Elenco Libri -->
+<div class="row mb-4">
+    <div class="col-md-8">
+        <div class="search-box">
+            <form action="{{ url_for('books') }}" method="get">
+                <div class="input-group">
+                    <span class="input-group-text"><i class="fas fa-search"></i></span>
+                    <input type="text" class="form-control" placeholder="Cerca per titolo, autore o ISBN..." name="q" value="{{ search_term }}">
+                    <button class="btn btn-primary" type="submit">Cerca</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    <div class="col-md-4 text-md-end">
+        <a href="{{ url_for('add_book') }}" class="btn btn-success">
+            <i class="fas fa-plus-circle me-2"></i> Nuovo Libro
+        </a>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-books me-2"></i> Elenco Libri</h5>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover table-striped mb-0">
+                        <thead>
+                            <tr>
+                                <th>Copertina</th>
+                                <th>Titolo</th>
+                                <th>Autore</th>
+                                <th>ISBN</th>
+                                <th>Stato</th>
+                                <th>Azioni</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for book in books.items %}
+                            <tr>
+                                <td style="width: 80px;">
+                                    {% if book.immagine_url %}
+                                    <img src="{{ book.immagine_url }}" alt="Copertina" class="cover-small">
+                                    {% else %}
+                                    <img src="{{ url_for('static', filename='img/default_cover.svg') }}" alt="Copertina non disponibile" class="cover-small">
+                                    {% endif %}
+                                </td>
+                                <td>{{ book.titolo }}</td>
+                                <td>{{ book.autore }}</td>
+                                <td>{{ book.isbn }}</td>
+                                <td>
+                                    {% if book.disponibile %}
+                                    <span class="badge bg-success">Disponibile</span>
+                                    {% else %}
+                                    <span class="badge bg-warning">In Prestito</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <a href="{{ url_for('edit_book', id=book.id) }}" class="btn btn-sm btn-primary">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                </td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="6" class="text-center py-4">
+                                    {% if search_term %}
+                                    <p>Nessun libro trovato con "{{ search_term }}"</p>
+                                    {% else %}
+                                    <p>Nessun libro presente nel database</p>
+                                    {% endif %}
+                                    <a href="{{ url_for('add_book') }}" class="btn btn-sm btn-primary">
+                                        <i class="fas fa-plus-circle me-2"></i> Aggiungi Libro
+                                    </a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            {% if books.pages > 1 %}
+            <div class="card-footer">
+                <nav aria-label="Navigazione pagine">
+                    <ul class="pagination justify-content-center mb-0">
+                        <li class="page-item {% if books.page == 1 %}disabled{% endif %}">
+                            <a class="page-link" href="{{ url_for('books', page=books.prev_num, q=search_term) }}" aria-label="Precedente">
+                                <span aria-hidden="true">&laquo;</span>
+                            </a>
+                        </li>
+                        
+                        {% for page_num in books.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}
+                            {% if page_num %}
+                                <li class="page-item {% if page_num == books.page %}active{% endif %}">
+                                    <a class="page-link" href="{{ url_for('books', page=page_num, q=search_term) }}">{{ page_num }}</a>
+                                </li>
+                            {% else %}
+                                <li class="page-item disabled">
+                                    <span class="page-link">...</span>
+                                </li>
+                            {% endif %}
+                        {% endfor %}
+                        
+                        <li class="page-item {% if books.page == books.pages %}disabled{% endif %}">
+                            <a class="page-link" href="{{ url_for('books', page=books.next_num, q=search_term) }}" aria-label="Successivo">
+                                <span aria-hidden="true">&raquo;</span>
+                            </a>
+                        </li>
+                    </ul>
+                </nav>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endif %}
+
+{% endblock %}
+
+{% block scripts %}
+<!-- Script per la gestione dell'ISBN e della copertina -->
+<script src="{{ url_for('static', filename='js/isbn.js') }}"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Gestione del caricamento dell'immagine
+        const coverUpload = document.getElementById('cover-upload');
+        const coverPreview = document.getElementById('cover-preview');
+        const imageData = document.getElementById('image_data');
+        
+        if (coverUpload && coverPreview && imageData) {
+            coverUpload.addEventListener('change', function(e) {
+                const file = e.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = function(event) {
+                        coverPreview.src = event.target.result;
+                        coverPreview.style.display = 'block';
+                        imageData.value = event.target.result;
+                    };
+                    reader.readAsDataURL(file);
+                }
+            });
+            
+            // Quando l'URL dell'immagine cambia, aggiorna l'anteprima
+            const imageUrl = document.getElementById('immagine_url');
+            if (imageUrl) {
+                imageUrl.addEventListener('change', function() {
+                    if (this.value) {
+                        coverPreview.src = this.value;
+                        coverPreview.style.display = 'block';
+                    } else {
+                        coverPreview.src = "{{ url_for('static', filename='img/default_cover.svg') }}";
+                    }
+                });
+            }
+        }
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,256 @@
+/* 
+* Stile personalizzato per Sistema di Gestione Biblioteca
+* Copyright © Fabio SABATELLI
+*/
+
+/* Stili generali */
+body {
+    font-family: 'Roboto', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    line-height: 1.6;
+}
+
+.footer {
+    padding: 20px 0;
+    font-size: 0.9rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    margin-top: 40px;
+}
+
+.page-title {
+    margin-bottom: 25px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Navbar */
+.navbar-brand img {
+    margin-right: 10px;
+}
+
+/* Card */
+.card {
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+    border-radius: 6px;
+    transition: transform 0.3s ease;
+}
+
+.card:hover {
+    transform: translateY(-2px);
+}
+
+.card-stats {
+    border-left: 4px solid;
+    height: 100%;
+}
+
+.card-stats.border-primary {
+    border-left-color: var(--bs-primary);
+}
+
+.card-stats.border-success {
+    border-left-color: var(--bs-success);
+}
+
+.card-stats.border-warning {
+    border-left-color: var(--bs-warning);
+}
+
+.card-stats.border-danger {
+    border-left-color: var(--bs-danger);
+}
+
+.card-stats .card-body {
+    padding: 15px;
+}
+
+.card-stats .stats-icon {
+    position: absolute;
+    right: 15px;
+    top: 15px;
+    opacity: 0.2;
+    font-size: 30px;
+}
+
+/* Tabelle */
+.table-responsive {
+    border-radius: 6px;
+    overflow: hidden;
+}
+
+.table th {
+    font-weight: 600;
+}
+
+.table-hover tbody tr:hover {
+    background-color: rgba(0, 123, 255, 0.05);
+}
+
+/* Form */
+.search-box {
+    position: relative;
+    margin-bottom: 20px;
+}
+
+.search-box .form-control {
+    padding-left: 35px;
+}
+
+.search-box i {
+    position: absolute;
+    left: 12px;
+    top: 12px;
+    color: #adb5bd;
+}
+
+.form-floating > .form-control {
+    padding-top: 1.625rem;
+    padding-bottom: 0.625rem;
+}
+
+/* Search Results */
+.search-results {
+    position: absolute;
+    z-index: 1000;
+    background: #fff;
+    width: 100%;
+    border: 1px solid #ced4da;
+    border-radius: 0 0 6px 6px;
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+/* Card Editor */
+.card-container {
+    width: 85.60mm;  /* Larghezza standard tessera */
+    height: 53.98mm;  /* Altezza standard tessera */
+    background-color: #fff;
+    border: 1px solid #ced4da;
+    position: relative;
+    margin: 0 auto;
+    border-radius: 3.18mm;
+    overflow: hidden;
+    color: #000;
+}
+
+.card-element {
+    position: absolute;
+    cursor: move;
+    z-index: 10;
+}
+
+.card-element.selected {
+    border: 2px dashed #007bff;
+}
+
+.card-text {
+    min-width: 20px;
+    min-height: 20px;
+    padding: 2px;
+}
+
+.element-toolbar {
+    margin-bottom: 20px;
+    border-bottom: 1px solid #ced4da;
+    padding-bottom: 10px;
+}
+
+.properties-panel {
+    background-color: #f8f9fa;
+    padding: 15px;
+    border-radius: 6px;
+    margin-top: 15px;
+}
+
+/* Preview container importazione */
+.preview-container {
+    margin-top: 20px;
+    background-color: #f8f9fa;
+    padding: 15px;
+    border-radius: 6px;
+}
+
+/* Barcodes */
+.barcode-container {
+    margin: 15px 0;
+    text-align: center;
+}
+
+/* Book covers */
+.book-cover {
+    max-width: 100%;
+    height: auto;
+    border-radius: 4px;
+}
+
+.cover-small {
+    max-width: 80px;
+    max-height: 120px;
+}
+
+/* Badges */
+.badge-active {
+    background-color: var(--bs-success);
+    color: white;
+}
+
+.badge-returned {
+    background-color: var(--bs-secondary);
+    color: white;
+}
+
+.badge-overdue {
+    background-color: var(--bs-danger);
+    color: white;
+}
+
+/* Icons */
+.action-icon {
+    cursor: pointer;
+    margin: 0 3px;
+    font-size: 0.9rem;
+}
+
+/* Buttons for scanner */
+.btn-scan {
+    position: relative;
+}
+
+.btn-scan.active {
+    background-color: var(--bs-success);
+    color: white;
+}
+
+/* Tooltips */
+.tooltip-inner {
+    max-width: 200px;
+    padding: 6px 10px;
+    background-color: #212529;
+    border-radius: 4px;
+}
+
+/* Alert container */
+#alert-container {
+    position: fixed;
+    top: 10px;
+    right: 10px;
+    z-index: 9999;
+    max-width: 90%;
+    width: 350px;
+}
+
+/* Responsive */
+@media (max-width: 767.98px) {
+    .card-stats {
+        margin-bottom: 15px;
+    }
+    
+    .card-container {
+        transform: scale(0.8);
+        transform-origin: top center;
+    }
+    
+    .nav-tabs .nav-link {
+        padding: 0.5rem 0.75rem;
+        font-size: 0.9rem;
+    }
+}
