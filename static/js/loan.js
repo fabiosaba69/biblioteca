@@ -281,32 +281,54 @@ document.addEventListener('DOMContentLoaded', function() {
      * @param {string} query - Termine di ricerca
      */
     function searchUsers(query) {
-        // In un'applicazione reale, questa sarebbe una chiamata API
-        // Per semplicità, supponiamo di avere una lista di utenti nel DOM
-        const userList = document.querySelectorAll('#user-list option');
-        userResults.innerHTML = '';
+        // Mostra un indicatore di caricamento
+        userResults.innerHTML = '<div class="list-group-item text-center"><div class="spinner-border spinner-border-sm text-primary" role="status"></div> Ricerca in corso...</div>';
         
-        let found = false;
-        userList.forEach(option => {
-            const text = option.textContent.toLowerCase();
-            const value = option.value;
-            
-            if (text.includes(query.toLowerCase())) {
-                found = true;
-                const div = document.createElement('div');
-                div.className = 'list-group-item list-group-item-action';
-                div.innerHTML = option.textContent;
-                div.addEventListener('click', () => {
-                    const parts = option.textContent.split(' - ');
-                    selectUser(value, parts[0], parts[1] || '');
+        // Chiamata all'API di ricerca utenti
+        fetch(`/api/search/utenti?q=${encodeURIComponent(query)}`)
+            .then(response => response.json())
+            .then(data => {
+                userResults.innerHTML = '';
+                
+                if (data.length === 0) {
+                    userResults.innerHTML = '<div class="list-group-item text-center">Nessun utente trovato</div>';
+                    return;
+                }
+                
+                // Crea un elemento per ciascun utente trovato
+                data.forEach(user => {
+                    const div = document.createElement('div');
+                    div.className = 'list-group-item list-group-item-action d-flex justify-content-between align-items-center';
+                    
+                    const userInfo = document.createElement('div');
+                    userInfo.innerHTML = `<strong>${user.nome} ${user.cognome}</strong>`;
+                    if (user.classe) {
+                        userInfo.innerHTML += `<br><small>Classe: ${user.classe}</small>`;
+                    }
+                    div.appendChild(userInfo);
+                    
+                    // Bottone per selezionare l'utente
+                    const selectBtn = document.createElement('button');
+                    selectBtn.className = 'btn btn-sm btn-primary';
+                    selectBtn.innerHTML = '<i class="fas fa-check"></i>';
+                    selectBtn.title = 'Seleziona utente';
+                    selectBtn.addEventListener('click', () => {
+                        selectUser(user.id, `${user.nome} ${user.cognome}`, user.classe || '');
+                    });
+                    div.appendChild(selectBtn);
+                    
+                    // Al click sull'intero div, seleziona l'utente
+                    div.addEventListener('click', () => {
+                        selectUser(user.id, `${user.nome} ${user.cognome}`, user.classe || '');
+                    });
+                    
+                    userResults.appendChild(div);
                 });
-                userResults.appendChild(div);
-            }
-        });
-        
-        if (!found) {
-            userResults.innerHTML = '<div class="list-group-item">Nessun utente trovato</div>';
-        }
+            })
+            .catch(error => {
+                console.error('Errore durante la ricerca utenti:', error);
+                userResults.innerHTML = '<div class="list-group-item text-danger">Errore durante la ricerca</div>';
+            });
     }
     
     /**
@@ -314,32 +336,57 @@ document.addEventListener('DOMContentLoaded', function() {
      * @param {string} query - Termine di ricerca
      */
     function searchBooks(query) {
-        // In un'applicazione reale, questa sarebbe una chiamata API
-        // Per semplicità, supponiamo di avere una lista di libri nel DOM
-        const bookList = document.querySelectorAll('#book-list option');
-        bookResults.innerHTML = '';
+        // Mostra un indicatore di caricamento
+        bookResults.innerHTML = '<div class="list-group-item text-center"><div class="spinner-border spinner-border-sm text-primary" role="status"></div> Ricerca in corso...</div>';
         
-        let found = false;
-        bookList.forEach(option => {
-            const text = option.textContent.toLowerCase();
-            const value = option.value;
-            
-            if (text.includes(query.toLowerCase())) {
-                found = true;
-                const div = document.createElement('div');
-                div.className = 'list-group-item list-group-item-action';
-                div.innerHTML = option.textContent;
-                div.addEventListener('click', () => {
-                    const parts = option.textContent.split(' - ');
-                    selectBook(value, parts[0], parts[1] || '');
+        // Chiamata all'API di ricerca libri
+        fetch(`/api/search/libri?q=${encodeURIComponent(query)}`)
+            .then(response => response.json())
+            .then(data => {
+                bookResults.innerHTML = '';
+                
+                if (data.length === 0) {
+                    bookResults.innerHTML = '<div class="list-group-item text-center">Nessun libro trovato</div>';
+                    return;
+                }
+                
+                // Crea un elemento per ciascun libro trovato
+                data.forEach(book => {
+                    const div = document.createElement('div');
+                    div.className = 'list-group-item list-group-item-action d-flex justify-content-between align-items-center';
+                    
+                    const bookInfo = document.createElement('div');
+                    bookInfo.innerHTML = `<strong>${book.titolo}</strong>`;
+                    if (book.autore) {
+                        bookInfo.innerHTML += `<br><small>${book.autore}</small>`;
+                    }
+                    if (book.isbn) {
+                        bookInfo.innerHTML += `<br><small class="text-muted">ISBN: ${book.isbn}</small>`;
+                    }
+                    div.appendChild(bookInfo);
+                    
+                    // Bottone per selezionare il libro
+                    const selectBtn = document.createElement('button');
+                    selectBtn.className = 'btn btn-sm btn-primary';
+                    selectBtn.innerHTML = '<i class="fas fa-check"></i>';
+                    selectBtn.title = 'Seleziona libro';
+                    selectBtn.addEventListener('click', () => {
+                        selectBook(book.id, book.titolo, book.autore || '');
+                    });
+                    div.appendChild(selectBtn);
+                    
+                    // Al click sull'intero div, seleziona il libro
+                    div.addEventListener('click', () => {
+                        selectBook(book.id, book.titolo, book.autore || '');
+                    });
+                    
+                    bookResults.appendChild(div);
                 });
-                bookResults.appendChild(div);
-            }
-        });
-        
-        if (!found) {
-            bookResults.innerHTML = '<div class="list-group-item">Nessun libro trovato</div>';
-        }
+            })
+            .catch(error => {
+                console.error('Errore durante la ricerca libri:', error);
+                bookResults.innerHTML = '<div class="list-group-item text-danger">Errore durante la ricerca</div>';
+            });
     }
     
     /**

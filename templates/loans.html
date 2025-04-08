@@ -142,18 +142,7 @@
     </div>
 </div>
 
-<!-- Liste nascoste per ricerca rapida (verrebbero normalmente popolate via API) -->
-<datalist id="user-list">
-    {% for user in users %}
-    <option value="{{ user.id }}">{{ user.nome }} {{ user.cognome }} - {{ user.classe }}</option>
-    {% endfor %}
-</datalist>
-
-<datalist id="book-list">
-    {% for book in available_books %}
-    <option value="{{ book.id }}">{{ book.titolo }} - {{ book.autore }}</option>
-    {% endfor %}
-</datalist>
+<!-- Le liste vengono caricate dinamicamente tramite API -->
 
 {% else %}
 <!-- Elenco Prestiti -->

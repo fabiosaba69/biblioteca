@@ -447,12 +447,11 @@ def add_loan():
         flash('Prestito registrato con successo!', 'success')
         return redirect(url_for('loans'))
         
-    # Ottieni la lista di utenti e libri per i menu a discesa
-    users = User.query.order_by(User.cognome, User.nome).all()
-    available_books = Book.query.filter_by(disponibile=True).order_by(Book.titolo).all()
+    # Non è più necessario ottenere le liste complete di utenti e libri
+    # perché verranno caricati dinamicamente tramite le API
     current_time = datetime.utcnow()
     
-    return render_template('loans.html', users=users, available_books=available_books, form_mode="add", current_time=current_time)
+    return render_template('loans.html', form_mode="add", current_time=current_time)
 
 @app.route('/prestiti/<int:id>/restituisci', methods=['POST'])
 @teacher_required
@@ -723,3 +722,58 @@ def get_card_template(id):
         'contenuto': json.loads(template.contenuto),
         'predefinito': template.predefinito
     })
+
+@app.route('/api/search/utenti')
+@login_required
+def search_users_api():
+    """API per la ricerca di utenti"""
+    query = request.args.get('q', '')
+    if len(query) < 3:
+        return jsonify([])
+    
+    users = User.query.filter(
+        (User.nome.ilike(f'%{query}%')) | 
+        (User.cognome.ilike(f'%{query}%')) |
+        (User.classe.ilike(f'%{query}%')) |
+        (User.username.ilike(f'%{query}%'))
+    ).limit(10).all()
+    
+    result = []
+    for user in users:
+        result.append({
+            'id': user.id,
+            'nome': user.nome,
+            'cognome': user.cognome,
+            'nome_completo': f"{user.nome} {user.cognome}",
+            'classe': user.classe,
+            'barcode': user.barcode
+        })
+    
+    return jsonify(result)
+
+@app.route('/api/search/libri')
+@login_required
+def search_books_api():
+    """API per la ricerca di libri"""
+    query = request.args.get('q', '')
+    if len(query) < 3:
+        return jsonify([])
+    
+    books = Book.query.filter(
+        (Book.titolo.ilike(f'%{query}%')) | 
+        (Book.autore.ilike(f'%{query}%')) |
+        (Book.isbn.ilike(f'%{query}%'))
+    ).filter_by(disponibile=True).limit(10).all()
+    
+    result = []
+    for book in books:
+        result.append({
+            'id': book.id,
+            'titolo': book.titolo,
+            'autore': book.autore,
+            'isbn': book.isbn,
+            'editore': book.editore,
+            'immagine_url': book.immagine_url
+        })
+    
+    return jsonify(result)
