@@ -18,10 +18,17 @@ app.secret_key = os.environ.get("SECRET_KEY", "chiave_segreta_da_modificare")
 app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)  # Necessario per url_for con https
 
 # Configurazione del database
-app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get("DATABASE_URL", "sqlite:///biblioteca.db")
+# Configura URL PostgreSQL
+database_url = os.environ.get("DATABASE_URL", "sqlite:///biblioteca.db")
+if database_url.startswith("postgres://"):
+    database_url = database_url.replace("postgres://", "postgresql://")
+
+app.config["SQLALCHEMY_DATABASE_URI"] = database_url
 app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
     "pool_recycle": 300,
     "pool_pre_ping": True,
+    "pool_size": 5,
+    "max_overflow": 10,
 }
 
 # Inizializza SQLAlchemy
