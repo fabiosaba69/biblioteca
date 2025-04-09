@@ -1,4 +1,3 @@
-
 @echo off
 echo =============================================
 echo Installazione Biblioteca Scolastica per Windows
@@ -15,10 +14,6 @@ if %errorlevel% neq 0 (
     pause
     exit /b 1
 )
-
-REM Verifica la versione di Python
-for /f "tokens=2" %%I in ('python --version 2^>^&1') do set "PYTHON_VERSION=%%I"
-echo Versione Python rilevata: %PYTHON_VERSION%
 
 REM Verifica PostgreSQL
 echo.
@@ -41,27 +36,18 @@ REM Aggiorna pip
 echo Aggiornamento pip...
 python -m pip install --upgrade pip
 
-REM Installa i requisiti
+REM Installa le dipendenze una per una
 echo Installazione dipendenze Python...
-python -m pip install ^
-    Flask==2.3.3 ^
-    Flask-Login==0.6.2 ^
-    Flask-SQLAlchemy==3.1.1 ^
-    Flask-WTF==1.1.1 ^
-    SQLAlchemy==2.0.21 ^
-    WTForms==3.0.1 ^
-    Werkzeug==2.3.7 ^
-    email-validator==2.0.0 ^
-    gunicorn==21.2.0 ^
-    pillow==10.0.0 ^
-    psycopg2-binary==2.9.7 ^
-    requests==2.31.0 ^
-    python-dotenv==1.0.0
+set DEPENDENCIES=Flask Flask-Login Flask-SQLAlchemy Flask-WTF SQLAlchemy WTForms Werkzeug email-validator gunicorn pillow psycopg2-binary requests python-dotenv
 
-if %errorlevel% neq 0 (
-    echo Errore nell'installazione delle dipendenze Python.
-    pause
-    exit /b 1
+for %%d in (%DEPENDENCIES%) do (
+    echo Installazione %%d...
+    python -m pip install %%d --no-cache-dir
+    if %errorlevel% neq 0 (
+        echo Errore nell'installazione di %%d
+        pause
+        exit /b 1
+    )
 )
 
 REM Crea file .env se non esiste
