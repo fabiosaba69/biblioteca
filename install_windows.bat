@@ -60,14 +60,16 @@ if not exist .env (
 )
 
 REM Crea file batch di avvio
-echo @echo off > start_biblioteca.bat
-echo echo Avvio Biblioteca Scolastica... >> start_biblioteca.bat
-echo echo Server disponibile su: >> start_biblioteca.bat
-echo echo - Locale: http://localhost:5000 >> start_biblioteca.bat
-echo echo - Rete LAN: http://%%COMPUTERNAME%%:5000 >> start_biblioteca.bat
-echo echo Per terminare premere CTRL+C >> start_biblioteca.bat
-echo. >> start_biblioteca.bat
-echo python app.py >> start_biblioteca.bat
+(
+echo @echo off
+echo echo Avvio Biblioteca Scolastica...
+echo echo Server disponibile su:
+echo echo - Locale: http://localhost:5000
+echo echo - Rete LAN: http://%%COMPUTERNAME%%:5000
+echo echo Per terminare premere CTRL+C
+echo.
+echo python app.py
+) > start_biblioteca.bat
 
 echo.
 echo =============================================
